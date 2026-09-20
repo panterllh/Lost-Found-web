@@ -356,6 +356,30 @@ h3 {
   align-items: center;
 }
 
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+#ai-search-panel,
+.metta-row {
+  animation: fadeSlideIn 0.25s ease;
+}
+
+.metta-row {
+  border-left: 3px solid var(--gold);
+}
+
+#ai-search-panel .empty-state {
+  animation: fadeSlideIn 0.2s ease;
+}
+
 /* ---------------- Hero ---------------- */
 
 .hero {
