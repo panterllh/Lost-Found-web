@@ -18,8 +18,7 @@
 // use a different Gemini model, change MODEL below; the request/
 // response shape is the same across Gemini models.
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-
+import { serve } from "jsr:@std/http/server";
 const MODEL = "gemini-3.1-flash-lite";
 
 const CORS_HEADERS = {
