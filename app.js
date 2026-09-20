@@ -1,11 +1,11 @@
 (function () {
   "use strict";
 
-  const DB_KEY = "lost_found_app_v1";
   const LANG_KEY = "lost_found_lang";
-  const CURRENT_USER_KEY = "lost_found_current_user";
 
   const categories = ["electronics", "wallet", "documents", "bags", "keys", "clothing", "bottle", "other"];
+
+  const supabase = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
 
   const i18n = {
     en: {
@@ -134,7 +134,6 @@
       photo: "Photo",
       noPhoto: "No photo",
       ownerOnly: "Only the listing owner can do that.",
-      authHint: "Demo account",
       signedInAs: "Signed in as",
       contactSafe: "Private contact details are hidden. Use internal messages to coordinate safely.",
       loading: "Loading",
@@ -153,7 +152,28 @@
       keys: "Keys",
       clothing: "Clothing",
       bottle: "Bottle",
-      other: "Other"
+      other: "Other",
+      createAccount: "Create account",
+      logIn: "Log in",
+      logOut: "Log out",
+      alreadyHaveAccount: "Already have an account? Log in",
+      dontHaveAccount: "Don't have an account? Create one",
+      yourName: "Your name",
+      email: "Email",
+      password: "Password",
+      confirmPassword: "Confirm password",
+      invalidCredentials: "Incorrect email or password.",
+      passwordsNoMatch: "Passwords do not match.",
+      accountCreated: "Account created. Welcome!",
+      checkEmailConfirm: "Check your email to confirm your account, then log in.",
+      welcomeBack: "Welcome back,",
+      loggedOut: "Logged out.",
+      registerTitle: "Create your account",
+      registerSubtitle: "Join the community to report, search, and recover items.",
+      loginTitle: "Log in",
+      loginSubtitle: "Log in to report items, message posters, and see your dashboard.",
+      noLostYet: "No lost items reported yet.",
+      noFoundYet: "No found items reported yet."
     },
     th: {
       appName: "Lost & Found",
@@ -281,7 +301,6 @@
       photo: "รูปภาพ",
       noPhoto: "ไม่มีรูป",
       ownerOnly: "เฉพาะเจ้าของรายการเท่านั้นที่ทำได้",
-      authHint: "บัญชีสาธิต",
       signedInAs: "เข้าสู่ระบบเป็น",
       contactSafe: "ข้อมูลติดต่อส่วนตัวถูกซ่อน ใช้ข้อความภายในเพื่อนัดหมายอย่างปลอดภัย",
       loading: "กำลังโหลด",
@@ -300,14 +319,36 @@
       keys: "กุญแจ",
       clothing: "เสื้อผ้า",
       bottle: "ขวดน้ำ",
-      other: "อื่น ๆ"
+      other: "อื่น ๆ",
+      createAccount: "สร้างบัญชี",
+      logIn: "เข้าสู่ระบบ",
+      logOut: "ออกจากระบบ",
+      alreadyHaveAccount: "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ",
+      dontHaveAccount: "ยังไม่มีบัญชี? สร้างบัญชี",
+      yourName: "ชื่อของคุณ",
+      email: "อีเมล",
+      password: "รหัสผ่าน",
+      confirmPassword: "ยืนยันรหัสผ่าน",
+      invalidCredentials: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+      passwordsNoMatch: "รหัสผ่านไม่ตรงกัน",
+      accountCreated: "สร้างบัญชีสำเร็จ ยินดีต้อนรับ!",
+      checkEmailConfirm: "ตรวจสอบอีเมลเพื่อยืนยันบัญชี จากนั้นเข้าสู่ระบบ",
+      welcomeBack: "ยินดีต้อนรับกลับ,",
+      loggedOut: "ออกจากระบบแล้ว",
+      registerTitle: "สร้างบัญชีของคุณ",
+      registerSubtitle: "เข้าร่วมชุมชนเพื่อแจ้ง ค้นหา และรับคืนของ",
+      loginTitle: "เข้าสู่ระบบ",
+      loginSubtitle: "เข้าสู่ระบบเพื่อแจ้งรายการ ส่งข้อความ และดูแดชบอร์ดของคุณ",
+      noLostYet: "ยังไม่มีรายการของหาย",
+      noFoundYet: "ยังไม่มีรายการของที่พบ"
     }
   };
 
   const state = {
-    db: null,
+    db: { users: [], listings: [], conversations: [], notifications: [], reports: [] },
+    session: null,
+    authError: null,
     lang: localStorage.getItem(LANG_KEY) || "en",
-    currentUserId: localStorage.getItem(CURRENT_USER_KEY) || "u1",
     mobileOpen: false,
     searchLoading: false,
     reportDraft: null,
@@ -342,13 +383,6 @@
     return new Date().toISOString();
   }
 
-  function daysAgo(days, hour = 9) {
-    const date = new Date();
-    date.setDate(date.getDate() - days);
-    date.setHours(hour, 15, 0, 0);
-    return date.toISOString();
-  }
-
   function formatDate(iso, withTime = false) {
     const options = withTime
       ? { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
@@ -379,206 +413,159 @@
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   }
 
-  function defaultDb() {
-    const users = [
-      { id: "u1", name: "Maya Chen", nameTh: "มายา เฉิน", memberSince: "2025-02-16", avatar: avatarImage("MC", "#087f7b") },
-      { id: "u2", name: "Narin S.", nameTh: "นรินทร์ ส.", memberSince: "2024-08-03", avatar: avatarImage("NS", "#316da8") },
-      { id: "u3", name: "Pim R.", nameTh: "พิมพ์ ร.", memberSince: "2026-01-22", avatar: avatarImage("PR", "#c97826") }
-    ];
+  const AVATAR_COLORS = ["#0f6e5a", "#316da8", "#b9852b", "#b83b23", "#5c7a35", "#7c6a9c"];
 
-    const listings = [
-      {
-        id: "l1",
-        type: "lost",
-        status: "active",
-        posterId: "u1",
-        name: { en: "Black iPhone", th: "ไอโฟนสีดำ" },
-        category: "electronics",
-        description: { en: "Black iPhone in a clear case. The lock screen has a beach photo.", th: "ไอโฟนสีดำใส่เคสใส หน้าจอล็อกเป็นรูปทะเล" },
-        color: { en: "Black", th: "ดำ" },
-        brand: "Apple",
-        location: { en: "Hatyai Wittayalai School cafeteria", th: "โรงอาหารโรงเรียนหาดใหญ่วิทยาลัย" },
-        dateTime: daysAgo(1, 12),
-        details: { en: "Small sticker inside the case. Please message through the app.", th: "มีสติกเกอร์เล็ก ๆ ด้านในเคส กรุณาส่งข้อความผ่านแอป" },
-        photos: [svgImage("iPhone", "#e9eef2", "#087f7b", "black case")],
-        contactPrefs: "Internal message only",
-        createdAt: daysAgo(1, 13),
-        updatedAt: daysAgo(1, 13)
-      },
-      {
-        id: "l2",
-        type: "found",
-        status: "active",
-        posterId: "u2",
-        name: { en: "Blue wallet", th: "กระเป๋าสตางค์สีน้ำเงิน" },
-        category: "wallet",
-        description: { en: "Blue wallet found on a bench. Contains cards; owner must identify details.", th: "พบกระเป๋าสตางค์สีน้ำเงินบนม้านั่ง มีบัตรอยู่ด้านใน เจ้าของต้องยืนยันรายละเอียด" },
-        color: { en: "Blue", th: "น้ำเงิน" },
-        brand: "Coach",
-        location: { en: "Central Hatyai, entrance B", th: "เซ็นทรัลหาดใหญ่ ทางเข้า B" },
-        dateTime: daysAgo(2, 18),
-        details: { en: "Kept safely at the information counter after posting.", th: "ฝากไว้ที่จุดประชาสัมพันธ์หลังจากโพสต์แล้ว" },
-        photos: [svgImage("Wallet", "#e3eef8", "#316da8", "blue leather")],
-        contactPrefs: "Message in app",
-        createdAt: daysAgo(2, 19),
-        updatedAt: daysAgo(2, 19)
-      },
-      {
-        id: "l3",
-        type: "lost",
-        status: "active",
-        posterId: "u3",
-        name: { en: "Student ID card", th: "บัตรนักเรียน" },
-        category: "documents",
-        description: { en: "Student ID card with green lanyard, likely dropped near the library.", th: "บัตรนักเรียนพร้อมสายคล้องสีเขียว น่าจะหล่นแถวห้องสมุด" },
-        color: { en: "Green and white", th: "เขียวและขาว" },
-        brand: "School ID",
-        location: { en: "Prince of Songkla University library", th: "ห้องสมุดมหาวิทยาลัยสงขลานครินทร์" },
-        dateTime: daysAgo(3, 15),
-        details: { en: "Name starts with P. Please do not post the ID number publicly.", th: "ชื่อขึ้นต้นด้วย พ. กรุณาอย่าโพสต์เลขบัตรต่อสาธารณะ" },
-        photos: [svgImage("ID Card", "#f0f7f5", "#2e7d52", "green lanyard")],
-        contactPrefs: "Internal message",
-        createdAt: daysAgo(3, 16),
-        updatedAt: daysAgo(3, 16)
-      },
-      {
-        id: "l4",
-        type: "found",
-        status: "active",
-        posterId: "u2",
-        name: { en: "Black backpack", th: "กระเป๋าเป้สีดำ" },
-        category: "bags",
-        description: { en: "Black backpack found near school gate. Has a math notebook inside.", th: "พบกระเป๋าเป้สีดำใกล้ประตูโรงเรียน มีสมุดคณิตศาสตร์อยู่ด้านใน" },
-        color: { en: "Black", th: "ดำ" },
-        brand: "Adidas",
-        location: { en: "Near Hatyai school gate", th: "ใกล้ประตูโรงเรียนหาดใหญ่" },
-        dateTime: daysAgo(0, 7),
-        details: { en: "Owner can verify notebook name and one hidden item.", th: "เจ้าของสามารถยืนยันชื่อบนสมุดและของด้านในอีกหนึ่งชิ้น" },
-        photos: [svgImage("Backpack", "#e9e1d6", "#182321", "near school")],
-        contactPrefs: "Message in app",
-        createdAt: daysAgo(0, 8),
-        updatedAt: daysAgo(0, 8)
-      },
-      {
-        id: "l5",
-        type: "lost",
-        status: "active",
-        posterId: "u1",
-        name: { en: "AirPods", th: "AirPods" },
-        category: "electronics",
-        description: { en: "White AirPods case with initials MC. Last seen in the university shuttle.", th: "เคส AirPods สีขาว มีตัวย่อ MC เห็นครั้งสุดท้ายบนรถรับส่งมหาวิทยาลัย" },
-        color: { en: "White", th: "ขาว" },
-        brand: "Apple",
-        location: { en: "PSU shuttle stop", th: "ป้ายรถรับส่ง ม.อ." },
-        dateTime: daysAgo(4, 10),
-        details: { en: "Case has a tiny scratch near the hinge.", th: "เคสมีรอยเล็ก ๆ ใกล้บานพับ" },
-        photos: [svgImage("AirPods", "#fff7ec", "#c97826", "white case")],
-        contactPrefs: "Internal message",
-        createdAt: daysAgo(4, 12),
-        updatedAt: daysAgo(4, 12)
-      },
-      {
-        id: "l6",
-        type: "found",
-        status: "active",
-        posterId: "u3",
-        name: { en: "Set of keys", th: "พวงกุญแจ" },
-        category: "keys",
-        description: { en: "Three keys with a small red keychain, found by the parking area.", th: "กุญแจสามดอกพร้อมพวงกุญแจสีแดง พบแถวลานจอดรถ" },
-        color: { en: "Silver and red", th: "เงินและแดง" },
-        brand: "",
-        location: { en: "Kim Yong Market parking", th: "ลานจอดรถตลาดกิมหยง" },
-        dateTime: daysAgo(5, 17),
-        details: { en: "Owner should describe the keychain shape.", th: "เจ้าของควรบอกรูปทรงพวงกุญแจได้" },
-        photos: [svgImage("Keys", "#fae5e8", "#b84c54", "red tag")],
-        contactPrefs: "Message in app",
-        createdAt: daysAgo(5, 18),
-        updatedAt: daysAgo(5, 18)
-      },
-      {
-        id: "l7",
-        type: "found",
-        status: "active",
-        posterId: "u2",
-        name: { en: "Water bottle", th: "ขวดน้ำ" },
-        category: "bottle",
-        description: { en: "Green insulated water bottle found after basketball practice.", th: "พบขวดน้ำเก็บความเย็นสีเขียวหลังซ้อมบาสเกตบอล" },
-        color: { en: "Green", th: "เขียว" },
-        brand: "Hydro Flask",
-        location: { en: "Hatyai municipal gym", th: "สนามกีฬาเทศบาลนครหาดใหญ่" },
-        dateTime: daysAgo(6, 20),
-        details: { en: "Sticker on one side. Owner can describe it.", th: "มีสติกเกอร์ด้านหนึ่ง เจ้าของบอกลายได้" },
-        photos: [svgImage("Bottle", "#e3f3e8", "#2e7d52", "green")],
-        contactPrefs: "Internal message",
-        createdAt: daysAgo(6, 21),
-        updatedAt: daysAgo(6, 21)
-      },
-      {
-        id: "l8",
-        type: "lost",
-        status: "recovered",
-        posterId: "u1",
-        name: { en: "School jacket", th: "เสื้อแจ็กเก็ตโรงเรียน" },
-        category: "clothing",
-        description: { en: "Black school jacket was returned after a match notification.", th: "เสื้อแจ็กเก็ตโรงเรียนสีดำได้รับคืนหลังมีการแจ้งเตือนรายการที่ตรงกัน" },
-        color: { en: "Black", th: "ดำ" },
-        brand: "School uniform",
-        location: { en: "Hatyai school auditorium", th: "หอประชุมโรงเรียนหาดใหญ่" },
-        dateTime: daysAgo(14, 16),
-        details: { en: "Recovered and kept in history.", th: "คืนของแล้วและเก็บไว้ในประวัติ" },
-        photos: [svgImage("Jacket", "#ece8df", "#182321", "recovered")],
-        contactPrefs: "Closed",
-        createdAt: daysAgo(15, 11),
-        updatedAt: daysAgo(12, 10),
-        recoveredAt: daysAgo(12, 10)
-      }
-    ];
-
-    const conversations = [
-      {
-        id: "c1",
-        itemId: "l4",
-        participants: ["u1", "u2"],
-        unreadBy: ["u1"],
-        updatedAt: daysAgo(0, 9),
-        messages: [
-          { id: "m1", senderId: "u2", body: "Hi, I found a black backpack near the school gate. Does it have your math notebook?", createdAt: daysAgo(0, 8) },
-          { id: "m2", senderId: "u1", body: "It might be mine. The notebook should have a blue cover and my name inside.", createdAt: daysAgo(0, 9) }
-        ]
-      }
-    ];
-
-    const notifications = [
-      { id: "n1", userId: "u1", type: "match", itemId: "l1", title: { en: "Possible match found", th: "พบรายการที่อาจตรงกัน" }, body: { en: "A black backpack was found near Hatyai school.", th: "พบกระเป๋าเป้สีดำใกล้โรงเรียนหาดใหญ่" }, read: false, createdAt: daysAgo(0, 9) },
-      { id: "n2", userId: "u1", type: "message", itemId: "l4", conversationId: "c1", title: { en: "New message", th: "ข้อความใหม่" }, body: { en: "Narin replied about a found backpack.", th: "นรินทร์ตอบกลับเกี่ยวกับกระเป๋าเป้ที่พบ" }, read: false, createdAt: daysAgo(0, 9) },
-      { id: "n3", userId: "u1", type: "status", itemId: "l8", title: { en: "School jacket recovered", th: "คืนเสื้อแจ็กเก็ตแล้ว" }, body: { en: "Your listing is preserved in recovered history.", th: "รายการถูกเก็บไว้ในประวัติคืนของแล้ว" }, read: true, createdAt: daysAgo(12, 10) }
-    ];
-
-    return { version: 1, users, listings, conversations, notifications, reports: [] };
+  function initialsOf(name) {
+    return (
+      (name || "?")
+        .trim()
+        .split(/\s+/)
+        .map((word) => word[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || "?"
+    );
   }
 
-  function loadDb() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(DB_KEY) || "null");
-      if (saved && saved.version === 1 && Array.isArray(saved.listings)) return saved;
-    } catch (_) {
-      /* fall through to seed data */
-    }
-    const seeded = defaultDb();
-    localStorage.setItem(DB_KEY, JSON.stringify(seeded));
-    return seeded;
+  function colorForId(idStr) {
+    let hash = 0;
+    for (let i = 0; i < String(idStr).length; i += 1) hash = (hash * 31 + idStr.charCodeAt(i)) >>> 0;
+    return AVATAR_COLORS[hash % AVATAR_COLORS.length];
   }
 
-  function saveDb() {
-    localStorage.setItem(DB_KEY, JSON.stringify(state.db));
+  // ---------------- Supabase row <-> app shape mapping ----------------
+
+  function mapProfileRow(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      memberSince: row.created_at,
+      avatar: row.avatar_url || avatarImage(initialsOf(row.name), colorForId(row.id))
+    };
+  }
+
+  function mapListingRow(row) {
+    return {
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      posterId: row.poster_id,
+      name: row.name,
+      category: row.category,
+      description: row.description,
+      color: row.color || "",
+      brand: row.brand || "",
+      location: row.location,
+      dateTime: row.date_time,
+      details: row.details || "",
+      photos: row.photos || [],
+      contactPrefs: row.contact_prefs || "",
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      recoveredAt: row.recovered_at
+    };
+  }
+
+  function mapConversationRow(row) {
+    const messages = (row.messages || [])
+      .slice()
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .map((m) => ({ id: m.id, senderId: m.sender_id, body: m.body, createdAt: m.created_at }));
+    return {
+      id: row.id,
+      itemId: row.item_id,
+      participants: row.participants,
+      unreadBy: row.unread_by || [],
+      updatedAt: row.updated_at,
+      createdAt: row.created_at,
+      messages
+    };
+  }
+
+  function mapNotificationRow(row) {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      type: row.type,
+      itemId: row.item_id,
+      conversationId: row.conversation_id,
+      title: row.title,
+      body: row.body,
+      read: row.read,
+      createdAt: row.created_at
+    };
+  }
+
+  // ---------------- Data loading (real database) ----------------
+
+  function uid() {
+    return state.session ? state.session.user.id : null;
   }
 
   function currentUser() {
-    return state.db.users.find((user) => user.id === state.currentUserId) || state.db.users[0];
+    if (!state.session) return null;
+    return state.db.users.find((user) => user.id === uid()) || null;
   }
 
   function userName(user) {
+    if (!user) return "";
     return state.lang === "th" && user.nameTh ? user.nameTh : user.name;
+  }
+
+  async function refreshProfiles() {
+    const { data, error } = await supabase.from("profiles").select("*");
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    state.db.users = (data || []).map(mapProfileRow);
+  }
+
+  async function refreshListings() {
+    const { data, error } = await supabase.from("listings").select("*").order("created_at", { ascending: false });
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    state.db.listings = (data || []).map(mapListingRow);
+  }
+
+  async function refreshConversations() {
+    if (!state.session) {
+      state.db.conversations = [];
+      return;
+    }
+    const { data, error } = await supabase
+      .from("conversations")
+      .select("*, messages(*)")
+      .contains("participants", [uid()])
+      .order("updated_at", { ascending: false });
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    state.db.conversations = (data || []).map(mapConversationRow);
+  }
+
+  async function refreshNotifications() {
+    if (!state.session) {
+      state.db.notifications = [];
+      return;
+    }
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", uid())
+      .order("created_at", { ascending: false });
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    state.db.notifications = (data || []).map(mapNotificationRow);
+  }
+
+  async function refreshAll() {
+    await Promise.all([refreshProfiles(), refreshListings(), refreshConversations(), refreshNotifications()]);
   }
 
   function listingImage(listing) {
@@ -689,22 +676,31 @@
   }
 
   function navItems() {
-    return [
+    const items = [
       ["home", t("navHome"), "home"],
-      ["search", t("navSearch"), "search"],
-      ["dashboard", t("navDashboard"), "dash"],
-      ["messages", t("navMessages"), "messages"],
-      ["notifications", t("navNotifications"), "bell"],
-      ["profile", t("navProfile"), "user"]
+      ["search", t("navSearch"), "search"]
     ];
+    if (state.session) {
+      items.push(
+        ["dashboard", t("navDashboard"), "dash"],
+        ["messages", t("navMessages"), "messages"],
+        ["notifications", t("navNotifications"), "bell"],
+        ["profile", t("navProfile"), "user"]
+      );
+    }
+    return items;
   }
 
   function unreadMessages() {
-    return state.db.conversations.filter((conversation) => conversation.participants.includes(state.currentUserId) && conversation.unreadBy.includes(state.currentUserId)).length;
+    const myId = uid();
+    if (!myId) return 0;
+    return state.db.conversations.filter((conversation) => conversation.participants.includes(myId) && conversation.unreadBy.includes(myId)).length;
   }
 
   function unreadNotifications() {
-    return state.db.notifications.filter((notification) => notification.userId === state.currentUserId && !notification.read).length;
+    const myId = uid();
+    if (!myId) return 0;
+    return state.db.notifications.filter((notification) => notification.userId === myId && !notification.read).length;
   }
 
   function renderShell(content) {
@@ -720,6 +716,14 @@
       })
       .join("");
 
+    const authActions = state.session
+      ? `
+        <span class="user-switch" title="${html(userName(user))}"><span>${html(userName(user))}</span></span>
+        <button class="ghost-button" data-action="logout" type="button">${html(t("logOut"))}</button>`
+      : `
+        <a class="ghost-button" href="#login">${html(t("logIn"))}</a>
+        <a class="primary-button" href="#register">${html(t("createAccount"))}</a>`;
+
     return `
       <div class="app-shell">
         <header class="topbar">
@@ -731,9 +735,7 @@
             <div class="nav-links">${links}</div>
             <div class="nav-actions">
               <button class="lang-toggle" data-action="toggle-lang" type="button">${html(t("language"))}</button>
-              <button class="user-switch" data-action="switch-user" type="button" title="${html(t("authHint"))}">
-                <span>${html(userName(user))}</span>
-              </button>
+              ${authActions}
               <button class="mobile-menu-button" data-action="toggle-menu" type="button" aria-label="${html(t("menu"))}">${icon("menu")}</button>
             </div>
           </nav>
@@ -780,7 +782,7 @@
                 <span class="status-badge badge-match">${html(t("statusMatch"))}</span>
               </div>
               <div class="showcase-stack">
-                ${showcase.map((listing) => miniFloatingCard(listing)).join("")}
+                ${showcase.length ? showcase.map((listing) => miniFloatingCard(listing)).join("") : `<p class="muted">${html(t("noResultsHint"))}</p>`}
               </div>
             </div>
           </aside>
@@ -792,7 +794,7 @@
             <div><h2>${html(t("recentlyLost"))}</h2><p>${html(t("contactSafe"))}</p></div>
             <a class="ghost-button" href="#search?type=lost">${html(t("navSearch"))}</a>
           </div>
-          <div class="grid cards">${recentLost.map(itemCard).join("")}</div>
+          ${recentLost.length ? `<div class="grid cards">${recentLost.map(itemCard).join("")}</div>` : emptyState(t("noLostYet"), t("contactSafe"), "report")}
         </div>
       </section>
       <section class="section">
@@ -801,7 +803,7 @@
             <div><h2>${html(t("recentlyFound"))}</h2><p>${html(t("tagline"))}</p></div>
             <a class="ghost-button" href="#search?type=found">${html(t("navSearch"))}</a>
           </div>
-          <div class="grid cards">${recentFound.map(itemCard).join("")}</div>
+          ${recentFound.length ? `<div class="grid cards">${recentFound.map(itemCard).join("")}</div>` : emptyState(t("noFoundYet"), t("tagline"), "report")}
         </div>
       </section>`;
   }
@@ -1059,8 +1061,8 @@
   function renderItem(idValue) {
     const listing = state.db.listings.find((item) => item.id === idValue);
     if (!listing) return `<section class="section"><div class="container">${emptyState(t("noResults"), t("noResultsHint"))}</div></section>`;
-    const poster = state.db.users.find((user) => user.id === listing.posterId);
-    const isOwner = listing.posterId === state.currentUserId;
+    const poster = state.db.users.find((user) => user.id === listing.posterId) || { name: "?", avatar: svgImage(t("noPhoto"), "#f0f7f5", "#087f7b", ""), memberSince: listing.createdAt };
+    const isOwner = listing.posterId === uid();
     const matches = findMatches(listing);
     const images = listing.photos && listing.photos.length ? listing.photos : [listingImage(listing)];
     const selected = Math.min(state.selectedImageIndex, images.length - 1);
@@ -1131,8 +1133,9 @@
   }
 
   function renderMessages() {
+    const myId = uid();
     const conversations = state.db.conversations
-      .filter((conversation) => conversation.participants.includes(state.currentUserId))
+      .filter((conversation) => conversation.participants.includes(myId))
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     if (!state.selectedConversationId && conversations[0]) state.selectedConversationId = conversations[0].id;
     const active = state.db.conversations.find((conversation) => conversation.id === state.selectedConversationId) || conversations[0];
@@ -1154,11 +1157,12 @@
   }
 
   function conversationCard(conversation) {
+    const myId = uid();
     const listing = state.db.listings.find((item) => item.id === conversation.itemId);
-    const otherId = conversation.participants.find((idValue) => idValue !== state.currentUserId);
+    const otherId = conversation.participants.find((idValue) => idValue !== myId);
     const other = state.db.users.find((user) => user.id === otherId);
     const last = conversation.messages[conversation.messages.length - 1];
-    const unread = conversation.unreadBy.includes(state.currentUserId);
+    const unread = conversation.unreadBy.includes(myId);
     return `
       <button class="conversation-card ${conversation.id === state.selectedConversationId ? "active" : ""}" data-action="select-conversation" data-id="${conversation.id}" type="button">
         <img src="${listingImage(listing)}" alt="${html(text(listing.name))}" />
@@ -1171,8 +1175,9 @@
   }
 
   function chatPanel(conversation) {
+    const myId = uid();
     const listing = state.db.listings.find((item) => item.id === conversation.itemId);
-    const otherId = conversation.participants.find((idValue) => idValue !== state.currentUserId);
+    const otherId = conversation.participants.find((idValue) => idValue !== myId);
     const other = state.db.users.find((user) => user.id === otherId);
     return `
       <div class="chat-header">
@@ -1182,7 +1187,7 @@
         </div>
       </div>
       <div class="messages" id="message-list">
-        ${conversation.messages.map((message) => `<div class="bubble ${message.senderId === state.currentUserId ? "mine" : ""}">${html(message.body)}<div class="bubble-time">${html(formatDate(message.createdAt, true))}</div></div>`).join("")}
+        ${conversation.messages.map((message) => `<div class="bubble ${message.senderId === myId ? "mine" : ""}">${html(message.body)}<div class="bubble-time">${html(formatDate(message.createdAt, true))}</div></div>`).join("")}
       </div>
       <form class="chat-input" id="chat-form">
         <input id="chat-message" placeholder="${html(t("typeMessage"))}" autocomplete="off" />
@@ -1191,7 +1196,8 @@
   }
 
   function renderNotifications() {
-    const notes = state.db.notifications.filter((note) => note.userId === state.currentUserId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const myId = uid();
+    const notes = state.db.notifications.filter((note) => note.userId === myId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return `
       <section class="section">
         <div class="container">
@@ -1214,7 +1220,8 @@
 
   function renderProfile() {
     const user = currentUser();
-    const mine = state.db.listings.filter((listing) => listing.posterId === state.currentUserId);
+    const myId = uid();
+    const mine = state.db.listings.filter((listing) => listing.posterId === myId);
     const active = mine.filter((listing) => listing.status !== "recovered");
     const recovered = mine.filter((listing) => listing.status === "recovered");
     return `
@@ -1223,7 +1230,7 @@
           <div class="profile-head">
             <span class="avatar"><img src="${user.avatar}" alt="${html(userName(user))}" /></span>
             <div><h1>${html(userName(user))}</h1><p class="meta">${html(t("signedInAs"))} ${html(userName(user))} · ${html(t("memberSince"))}: ${html(formatDate(user.memberSince))}</p></div>
-            <button class="ghost-button" data-action="switch-user" type="button">${html(t("authHint"))}</button>
+            <button class="ghost-button" data-action="logout" type="button">${html(t("logOut"))}</button>
           </div>
           <div class="section grid three">
             ${statCard(mine.length, t("itemsReported"))}
@@ -1245,24 +1252,26 @@
   }
 
   function listingRow(listing) {
+    const myId = uid();
     return `
       <div class="listing-row">
         <img src="${listingImage(listing)}" alt="${html(text(listing.name))}" />
         <div><strong>${html(text(listing.name))}</strong><div class="meta">${html(text(listing.location))} · ${html(formatDate(listing.createdAt))}</div><span class="status-badge ${statusClass(listing)}">${html(statusLabel(listing))}</span></div>
         <div class="button-row">
           <a class="secondary-button" href="#item/${listing.id}">${html(t("viewDetails"))}</a>
-          ${listing.posterId === state.currentUserId ? `<button class="ghost-button" data-action="open-edit-modal" data-id="${listing.id}" type="button">${html(t("edit"))}</button>` : ""}
-          ${listing.posterId === state.currentUserId && listing.status !== "recovered" ? `<button class="ghost-button" data-action="recover-listing" data-id="${listing.id}" type="button">${html(t("markRecovered"))}</button>` : ""}
+          ${listing.posterId === myId ? `<button class="ghost-button" data-action="open-edit-modal" data-id="${listing.id}" type="button">${html(t("edit"))}</button>` : ""}
+          ${listing.posterId === myId && listing.status !== "recovered" ? `<button class="ghost-button" data-action="recover-listing" data-id="${listing.id}" type="button">${html(t("markRecovered"))}</button>` : ""}
         </div>
       </div>`;
   }
 
   function renderDashboard() {
-    const mine = state.db.listings.filter((listing) => listing.posterId === state.currentUserId);
+    const myId = uid();
+    const mine = state.db.listings.filter((listing) => listing.posterId === myId);
     const activeLost = mine.filter((listing) => listing.type === "lost" && listing.status !== "recovered");
     const activeFound = mine.filter((listing) => listing.type === "found" && listing.status !== "recovered");
     const possible = mine.flatMap((listing) => findMatches(listing).map((match) => ({ source: listing, ...match }))).slice(0, 5);
-    const notes = state.db.notifications.filter((note) => note.userId === state.currentUserId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
+    const notes = state.db.notifications.filter((note) => note.userId === myId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
     const recovered = mine.filter((listing) => listing.status === "recovered");
     return `
       <section class="section">
@@ -1323,10 +1332,63 @@
     return "";
   }
 
+  function renderLogin() {
+    return `
+      <section class="section">
+        <div class="container auth-wrap">
+          <div class="page-title"><div><h1>${html(t("loginTitle"))}</h1><p>${html(t("loginSubtitle"))}</p></div></div>
+          <form class="form-card" id="login-form">
+            <div class="form-grid">
+              <div class="field span-2"><label for="login-email">${html(t("email"))}</label><input id="login-email" type="email" required autocomplete="email" /></div>
+              <div class="field span-2"><label for="login-password">${html(t("password"))}</label><input id="login-password" type="password" required autocomplete="current-password" /></div>
+            </div>
+            ${state.authError ? `<div class="error-text">${html(state.authError)}</div>` : ""}
+            <div class="button-row">
+              <button class="primary-button" type="submit">${html(t("logIn"))}</button>
+              <a class="ghost-button" href="#register">${html(t("dontHaveAccount"))}</a>
+            </div>
+          </form>
+        </div>
+      </section>`;
+  }
+
+  function renderRegister() {
+    return `
+      <section class="section">
+        <div class="container auth-wrap">
+          <div class="page-title"><div><h1>${html(t("registerTitle"))}</h1><p>${html(t("registerSubtitle"))}</p></div></div>
+          <form class="form-card" id="register-form">
+            <div class="form-grid">
+              <div class="field span-2"><label for="reg-name">${html(t("yourName"))}</label><input id="reg-name" required autocomplete="name" /></div>
+              <div class="field span-2"><label for="reg-email">${html(t("email"))}</label><input id="reg-email" type="email" required autocomplete="email" /></div>
+              <div class="field span-2"><label for="reg-password">${html(t("password"))}</label><input id="reg-password" type="password" minlength="6" required autocomplete="new-password" /></div>
+              <div class="field span-2"><label for="reg-password2">${html(t("confirmPassword"))}</label><input id="reg-password2" type="password" minlength="6" required autocomplete="new-password" /></div>
+            </div>
+            ${state.authError ? `<div class="error-text">${html(state.authError)}</div>` : ""}
+            <div class="button-row">
+              <button class="primary-button" type="submit">${html(t("createAccount"))}</button>
+              <a class="ghost-button" href="#login">${html(t("alreadyHaveAccount"))}</a>
+            </div>
+          </form>
+        </div>
+      </section>`;
+  }
+
   function renderApp() {
     document.documentElement.lang = state.lang;
     const route = getRoute();
     const [page, arg] = route.path.split("/");
+
+    const protectedPages = ["report", "messages", "notifications", "profile", "dashboard"];
+    if (protectedPages.includes(page) && !state.session) {
+      location.hash = "login";
+      return;
+    }
+    if ((page === "login" || page === "register") && state.session) {
+      location.hash = "home";
+      return;
+    }
+
     let content = "";
     if (page === "home") content = renderHome();
     else if (page === "search") content = renderSearch();
@@ -1336,6 +1398,8 @@
     else if (page === "notifications") content = renderNotifications();
     else if (page === "profile") content = renderProfile();
     else if (page === "dashboard") content = renderDashboard();
+    else if (page === "login") content = renderLogin();
+    else if (page === "register") content = renderRegister();
     else content = renderHome();
     document.getElementById("app").innerHTML = renderShell(content);
     bindPage();
@@ -1375,102 +1439,135 @@
     return Object.keys(draft.errors).length === 0;
   }
 
-  function publishListing() {
+  function tObj(en, th) {
+    return { en, th };
+  }
+
+  async function addNotification(userId, type, itemId, title, body, conversationId) {
+    const { error } = await supabase.from("notifications").insert({
+      user_id: userId,
+      type,
+      item_id: itemId || null,
+      conversation_id: conversationId || null,
+      title,
+      body,
+      read: false
+    });
+    if (error) toast(error.message);
+  }
+
+  async function publishListing() {
+    if (!state.session) return go("login");
     if (!validateDraft(1)) {
       state.reportDraft.step = 1;
       renderApp();
       return;
     }
     const draft = state.reportDraft;
-    const listing = {
-      id: id("l"),
-      type: draft.type,
-      status: "active",
-      posterId: state.currentUserId,
-      name: draft.itemName,
-      category: draft.category,
-      description: draft.description,
-      color: draft.color,
-      brand: draft.brand,
-      location: draft.location,
-      dateTime: new Date(draft.dateTime).toISOString(),
-      details: draft.details,
-      photos: draft.photos.length ? draft.photos : [svgImage(draft.itemName || t("photo"), "#f0f7f5", "#087f7b", t(draft.category))],
-      contactPrefs: draft.contactPrefs,
-      createdAt: nowIso(),
-      updatedAt: nowIso()
-    };
+    const posterId = uid();
+    const { data, error } = await supabase
+      .from("listings")
+      .insert({
+        poster_id: posterId,
+        type: draft.type,
+        status: "active",
+        name: draft.itemName,
+        category: draft.category,
+        description: draft.description,
+        color: draft.color,
+        brand: draft.brand,
+        location: draft.location,
+        date_time: new Date(draft.dateTime).toISOString(),
+        details: draft.details,
+        photos: draft.photos,
+        contact_prefs: draft.contactPrefs
+      })
+      .select()
+      .single();
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    const listing = mapListingRow(data);
     state.db.listings.unshift(listing);
     const matches = findMatches(listing);
     if (matches.length) {
-      addNotification(state.currentUserId, "match", listing.id, tObj("Possible matches found", "พบรายการที่อาจตรงกัน"), tObj(`${matches.length} listing may match your report.`, `มี ${matches.length} รายการที่อาจตรงกับรายการของคุณ`));
-      matches.forEach((match) => {
-        if (match.item.posterId !== state.currentUserId) {
-          addNotification(match.item.posterId, "match", match.item.id, tObj("Someone posted a possible match", "มีคนโพสต์รายการที่อาจตรงกัน"), tObj(`${text(listing.name)} may match your listing.`, `${text(listing.name)} อาจตรงกับรายการของคุณ`));
+      await addNotification(posterId, "match", listing.id, tObj("Possible matches found", "พบรายการที่อาจตรงกัน"), tObj(`${matches.length} listing may match your report.`, `มี ${matches.length} รายการที่อาจตรงกับรายการของคุณ`));
+      for (const match of matches) {
+        if (match.item.posterId !== posterId) {
+          await addNotification(match.item.posterId, "match", match.item.id, tObj("Someone posted a possible match", "มีคนโพสต์รายการที่อาจตรงกัน"), tObj(`${text(listing.name)} may match your listing.`, `${text(listing.name)} อาจตรงกับรายการของคุณ`));
         }
-      });
+      }
+      await refreshNotifications();
     }
-    saveDb();
     state.reportDraft = null;
     toast(t("published"));
     go(`item/${listing.id}`);
   }
 
-  function tObj(en, th) {
-    return { en, th };
-  }
-
-  function addNotification(userId, type, itemId, title, body, conversationId) {
-    state.db.notifications.unshift({ id: id("n"), userId, type, itemId, conversationId, title, body, read: false, createdAt: nowIso() });
-  }
-
-  function getOrCreateConversation(listing) {
-    const existing = state.db.conversations.find((conversation) => conversation.itemId === listing.id && conversation.participants.includes(state.currentUserId) && conversation.participants.includes(listing.posterId));
+  async function getOrCreateConversation(listing) {
+    const myId = uid();
+    const existing = state.db.conversations.find((c) => c.itemId === listing.id && c.participants.includes(myId) && c.participants.includes(listing.posterId));
     if (existing) return existing;
-    const conversation = {
-      id: id("c"),
-      itemId: listing.id,
-      participants: [state.currentUserId, listing.posterId],
-      unreadBy: [],
-      updatedAt: nowIso(),
-      messages: [
-        { id: id("m"), senderId: state.currentUserId, body: state.lang === "th" ? "สวัสดีครับ/ค่ะ ฉันติดต่อเรื่องรายการนี้ อยากตรวจสอบรายละเอียดเพิ่มเติม" : "Hi, I am contacting you about this listing and would like to verify a few details.", createdAt: nowIso() }
-      ]
-    };
+    const greeting = state.lang === "th" ? "สวัสดีครับ/ค่ะ ฉันติดต่อเรื่องรายการนี้ อยากตรวจสอบรายละเอียดเพิ่มเติม" : "Hi, I am contacting you about this listing and would like to verify a few details.";
+    const { data: convoRow, error } = await supabase
+      .from("conversations")
+      .insert({ item_id: listing.id, participants: [myId, listing.posterId], unread_by: [listing.posterId] })
+      .select()
+      .single();
+    if (error) {
+      toast(error.message);
+      return null;
+    }
+    const { data: msgRow, error: msgError } = await supabase
+      .from("messages")
+      .insert({ conversation_id: convoRow.id, sender_id: myId, body: greeting })
+      .select()
+      .single();
+    if (msgError) toast(msgError.message);
+    await addNotification(listing.posterId, "message", listing.id, tObj("New message", "ข้อความใหม่"), tObj(`${userName(currentUser())} messaged you about ${text(listing.name)}.`, `${userName(currentUser())} ส่งข้อความเกี่ยวกับ ${text(listing.name)}`), convoRow.id);
+    const conversation = mapConversationRow({ ...convoRow, messages: msgRow ? [msgRow] : [] });
     state.db.conversations.unshift(conversation);
-    addNotification(listing.posterId, "message", listing.id, tObj("New message", "ข้อความใหม่"), tObj(`${userName(currentUser())} messaged you about ${text(listing.name)}.`, `${userName(currentUser())} ส่งข้อความเกี่ยวกับ ${text(listing.name)}`), conversation.id);
-    saveDb();
     return conversation;
   }
 
-  function markRecovered(listingId) {
+  async function markRecovered(listingId) {
     const listing = state.db.listings.find((item) => item.id === listingId);
     if (!listing) return;
-    if (listing.posterId !== state.currentUserId) {
+    if (listing.posterId !== uid()) {
       toast(t("ownerOnly"));
       return;
     }
     if (!confirm(t("confirmRecover"))) return;
+    const { error } = await supabase.from("listings").update({ status: "recovered", recovered_at: nowIso(), updated_at: nowIso() }).eq("id", listingId);
+    if (error) {
+      toast(error.message);
+      return;
+    }
     listing.status = "recovered";
     listing.recoveredAt = nowIso();
     listing.updatedAt = nowIso();
-    addNotification(state.currentUserId, "status", listing.id, tObj("Listing recovered", "คืนของสำเร็จ"), tObj(`${text(listing.name)} was moved to recovered history.`, `${text(listing.name)} ถูกย้ายไปยังประวัติคืนของแล้ว`));
-    saveDb();
+    await addNotification(uid(), "status", listing.id, tObj("Listing recovered", "คืนของสำเร็จ"), tObj(`${text(listing.name)} was moved to recovered history.`, `${text(listing.name)} ถูกย้ายไปยังประวัติคืนของแล้ว`));
+    await refreshNotifications();
     toast(t("recoveredToast"));
     renderApp();
   }
 
-  function deleteListing(listingId) {
+  async function deleteListing(listingId) {
     const listing = state.db.listings.find((item) => item.id === listingId);
     if (!listing) return;
-    if (listing.posterId !== state.currentUserId) {
+    if (listing.posterId !== uid()) {
       toast(t("ownerOnly"));
       return;
     }
     if (!confirm(t("confirmDelete"))) return;
+    const { error } = await supabase.from("listings").delete().eq("id", listingId);
+    if (error) {
+      toast(error.message);
+      return;
+    }
     state.db.listings = state.db.listings.filter((item) => item.id !== listingId);
     state.db.conversations = state.db.conversations.filter((conversation) => conversation.itemId !== listingId);
-    saveDb();
     toast(t("deleted"));
     go("profile");
   }
@@ -1484,23 +1581,28 @@
     setTimeout(() => node.remove(), 3400);
   }
 
-  function readFiles(files) {
+  async function readFiles(files) {
+    if (!state.session) return;
     const draft = state.reportDraft;
     const imageFiles = [...files].filter((file) => file.type.startsWith("image/"));
     if (!imageFiles.length) return;
     draft.uploadProgress = 5;
     renderApp();
     let done = 0;
-    imageFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        draft.photos.push(reader.result);
-        done += 1;
-        draft.uploadProgress = Math.round((done / imageFiles.length) * 100);
-        renderApp();
-      };
-      reader.readAsDataURL(file);
-    });
+    for (const file of imageFiles) {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${uid()}/${id("photo")}.${ext}`;
+      const { error } = await supabase.storage.from("listing-photos").upload(path, file, { cacheControl: "3600", upsert: false });
+      if (!error) {
+        const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
+        draft.photos.push(data.publicUrl);
+      } else {
+        toast(error.message);
+      }
+      done += 1;
+      draft.uploadProgress = Math.round((done / imageFiles.length) * 100);
+      renderApp();
+    }
   }
 
   function bindPage() {
@@ -1521,7 +1623,7 @@
     if (searchForm) searchForm.addEventListener("submit", (event) => { event.preventDefault(); updateSearchFromFilters(); });
     ["filter-type", "filter-category", "filter-location", "filter-date", "filter-status", "filter-sort"].forEach((fieldId) => {
       const field = document.getElementById(fieldId);
-      if (field) field.addEventListener(fieldId === "filter-location" ? "change" : "change", updateSearchFromFilters);
+      if (field) field.addEventListener("change", updateSearchFromFilters);
     });
 
     document.querySelectorAll("[data-draft]").forEach((field) => {
@@ -1544,19 +1646,28 @@
 
     const chatForm = document.getElementById("chat-form");
     if (chatForm) {
-      chatForm.addEventListener("submit", (event) => {
+      chatForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const input = document.getElementById("chat-message");
         const body = input.value.trim();
         if (!body) return;
         const conversation = state.db.conversations.find((entry) => entry.id === state.selectedConversationId);
         if (!conversation) return;
-        conversation.messages.push({ id: id("m"), senderId: state.currentUserId, body, createdAt: nowIso() });
+        const myId = uid();
+        const { data, error } = await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: myId, body }).select().single();
+        if (error) {
+          toast(error.message);
+          return;
+        }
+        conversation.messages.push({ id: data.id, senderId: data.sender_id, body: data.body, createdAt: data.created_at });
+        const unreadBy = conversation.participants.filter((participantId) => participantId !== myId);
+        await supabase.from("conversations").update({ unread_by: unreadBy, updated_at: nowIso() }).eq("id", conversation.id);
+        conversation.unreadBy = unreadBy;
         conversation.updatedAt = nowIso();
-        conversation.unreadBy = conversation.participants.filter((participantId) => participantId !== state.currentUserId);
         const listing = state.db.listings.find((item) => item.id === conversation.itemId);
-        conversation.unreadBy.forEach((userId) => addNotification(userId, "message", conversation.itemId, tObj("New message", "ข้อความใหม่"), tObj(`${userName(currentUser())} sent a message about ${text(listing.name)}.`, `${userName(currentUser())} ส่งข้อความเกี่ยวกับ ${text(listing.name)}`), conversation.id));
-        saveDb();
+        for (const userId of unreadBy) {
+          await addNotification(userId, "message", conversation.itemId, tObj("New message", "ข้อความใหม่"), tObj(`${userName(currentUser())} sent a message about ${text(listing.name)}.`, `${userName(currentUser())} ส่งข้อความเกี่ยวกับ ${text(listing.name)}`), conversation.id);
+        }
         toast(t("messageSent"));
         renderApp();
       });
@@ -1564,11 +1675,19 @@
 
     const reportModal = document.getElementById("report-modal");
     if (reportModal) {
-      reportModal.addEventListener("submit", (event) => {
+      reportModal.addEventListener("submit", async (event) => {
         event.preventDefault();
-        state.db.reports.push({ id: id("r"), itemId: state.modal.itemId, reporterId: state.currentUserId, reason: document.getElementById("report-reason").value.trim(), createdAt: nowIso() });
+        const { error } = await supabase.from("reports").insert({
+          item_id: state.modal.itemId,
+          reporter_id: uid(),
+          reason: document.getElementById("report-reason").value.trim()
+        });
         state.modal = null;
-        saveDb();
+        if (error) {
+          toast(error.message);
+          renderApp();
+          return;
+        }
         toast(t("reportSent"));
         renderApp();
       });
@@ -1576,31 +1695,99 @@
 
     const editModal = document.getElementById("edit-modal");
     if (editModal) {
-      editModal.addEventListener("submit", (event) => {
+      editModal.addEventListener("submit", async (event) => {
         event.preventDefault();
         const listing = state.db.listings.find((item) => item.id === state.modal.itemId);
         if (!listing) return;
-        if (listing.posterId !== state.currentUserId) {
+        if (listing.posterId !== uid()) {
           toast(t("ownerOnly"));
           return;
         }
-        listing.name = document.getElementById("edit-name").value.trim();
-        listing.category = document.getElementById("edit-category").value;
-        listing.color = document.getElementById("edit-color").value.trim();
-        listing.brand = document.getElementById("edit-brand").value.trim();
-        listing.location = document.getElementById("edit-location").value.trim();
-        listing.description = document.getElementById("edit-description").value.trim();
-        listing.details = document.getElementById("edit-details").value.trim();
-        listing.updatedAt = nowIso();
+        const updates = {
+          name: document.getElementById("edit-name").value.trim(),
+          category: document.getElementById("edit-category").value,
+          color: document.getElementById("edit-color").value.trim(),
+          brand: document.getElementById("edit-brand").value.trim(),
+          location: document.getElementById("edit-location").value.trim(),
+          description: document.getElementById("edit-description").value.trim(),
+          details: document.getElementById("edit-details").value.trim(),
+          updated_at: nowIso()
+        };
+        const { error } = await supabase.from("listings").update(updates).eq("id", listing.id);
+        if (error) {
+          toast(error.message);
+          return;
+        }
+        Object.assign(listing, {
+          name: updates.name,
+          category: updates.category,
+          color: updates.color,
+          brand: updates.brand,
+          location: updates.location,
+          description: updates.description,
+          details: updates.details,
+          updatedAt: updates.updated_at
+        });
         state.modal = null;
-        saveDb();
         toast(t("save"));
         renderApp();
       });
     }
+
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          state.authError = t("invalidCredentials");
+          renderApp();
+          return;
+        }
+        state.authError = null;
+        state.session = data.session;
+        await refreshAll();
+        toast(`${t("welcomeBack")} ${userName(currentUser())}`);
+        go("home");
+      });
+    }
+
+    const registerForm = document.getElementById("register-form");
+    if (registerForm) {
+      registerForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const name = document.getElementById("reg-name").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const password2 = document.getElementById("reg-password2").value;
+        if (password !== password2) {
+          state.authError = t("passwordsNoMatch");
+          renderApp();
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name } } });
+        if (error) {
+          state.authError = error.message;
+          renderApp();
+          return;
+        }
+        state.authError = null;
+        if (data.session) {
+          state.session = data.session;
+          await refreshAll();
+          toast(t("accountCreated"));
+          go("home");
+        } else {
+          toast(t("checkEmailConfirm"));
+          go("login");
+        }
+      });
+    }
   }
 
-  function handleAction(event) {
+  async function handleAction(event) {
     const actionNode = event.currentTarget;
     const action = actionNode.dataset.action;
     if (action === "toggle-lang") {
@@ -1610,13 +1797,10 @@
     } else if (action === "toggle-menu") {
       state.mobileOpen = !state.mobileOpen;
       renderApp();
-    } else if (action === "switch-user") {
-      const index = state.db.users.findIndex((user) => user.id === state.currentUserId);
-      state.currentUserId = state.db.users[(index + 1) % state.db.users.length].id;
-      localStorage.setItem(CURRENT_USER_KEY, state.currentUserId);
-      state.selectedConversationId = null;
-      toast(`${t("signedInAs")} ${userName(currentUser())}`);
-      renderApp();
+    } else if (action === "logout") {
+      await supabase.auth.signOut();
+      toast(t("loggedOut"));
+      go("home");
     } else if (action === "report-type") {
       go(`report/${actionNode.dataset.type}`);
     } else if (action === "set-step") {
@@ -1635,7 +1819,7 @@
       state.reportDraft.step -= 1;
       renderApp();
     } else if (action === "publish-listing") {
-      publishListing();
+      await publishListing();
     } else if (action === "remove-photo") {
       state.reportDraft.photos.splice(Number(actionNode.dataset.index), 1);
       renderApp();
@@ -1650,26 +1834,29 @@
       state.selectedImageIndex = Number(actionNode.dataset.index);
       renderApp();
     } else if (action === "message-user") {
+      if (!state.session) return go("login");
       const listing = state.db.listings.find((item) => item.id === actionNode.dataset.id);
-      if (!listing || listing.posterId === state.currentUserId) return;
-      const conversation = getOrCreateConversation(listing);
+      if (!listing || listing.posterId === uid()) return;
+      const conversation = await getOrCreateConversation(listing);
+      if (!conversation) return;
       state.selectedConversationId = conversation.id;
       toast(t("messageSent"));
       go("messages");
     } else if (action === "think-mine") {
+      if (!state.session) return go("login");
       const listing = state.db.listings.find((item) => item.id === actionNode.dataset.id);
       if (!listing) return;
-      addNotification(listing.posterId, "interaction", listing.id, tObj("Someone may own your found item", "มีคนอาจเป็นเจ้าของรายการที่คุณพบ"), tObj(`${userName(currentUser())} thinks ${text(listing.name)} may be theirs.`, `${userName(currentUser())} คิดว่า ${text(listing.name)} อาจเป็นของเขา/เธอ`));
-      saveDb();
+      await addNotification(listing.posterId, "interaction", listing.id, tObj("Someone may own your found item", "มีคนอาจเป็นเจ้าของรายการที่คุณพบ"), tObj(`${userName(currentUser())} thinks ${text(listing.name)} may be theirs.`, `${userName(currentUser())} คิดว่า ${text(listing.name)} อาจเป็นของเขา/เธอ`));
       toast(t("interactionSent"));
     } else if (action === "open-report-modal") {
       event.preventDefault();
+      if (!state.session) return go("login");
       state.modal = { type: "report", itemId: actionNode.dataset.id };
       renderApp();
     } else if (action === "open-edit-modal") {
       event.preventDefault();
       const listing = state.db.listings.find((item) => item.id === actionNode.dataset.id);
-      if (!listing || listing.posterId !== state.currentUserId) {
+      if (!listing || listing.posterId !== uid()) {
         toast(t("ownerOnly"));
         return;
       }
@@ -1680,28 +1867,31 @@
       state.modal = null;
       renderApp();
     } else if (action === "recover-listing") {
-      markRecovered(actionNode.dataset.id);
+      await markRecovered(actionNode.dataset.id);
     } else if (action === "delete-listing") {
-      deleteListing(actionNode.dataset.id);
+      await deleteListing(actionNode.dataset.id);
     } else if (action === "select-conversation") {
       state.selectedConversationId = actionNode.dataset.id;
       const conversation = state.db.conversations.find((entry) => entry.id === state.selectedConversationId);
-      if (conversation) {
-        conversation.unreadBy = conversation.unreadBy.filter((userId) => userId !== state.currentUserId);
-        saveDb();
+      const myId = uid();
+      if (conversation && conversation.unreadBy.includes(myId)) {
+        const nextUnread = conversation.unreadBy.filter((userId) => userId !== myId);
+        await supabase.from("conversations").update({ unread_by: nextUnread }).eq("id", conversation.id);
+        conversation.unreadBy = nextUnread;
       }
       renderApp();
     } else if (action === "mark-all-read") {
-      state.db.notifications.forEach((note) => {
-        if (note.userId === state.currentUserId) note.read = true;
-      });
-      saveDb();
+      const ids = state.db.notifications.filter((n) => !n.read).map((n) => n.id);
+      if (ids.length) {
+        await supabase.from("notifications").update({ read: true }).in("id", ids);
+        state.db.notifications.forEach((note) => { note.read = true; });
+      }
       renderApp();
     } else if (action === "read-note") {
       const note = state.db.notifications.find((entry) => entry.id === actionNode.dataset.id);
-      if (note) {
+      if (note && !note.read) {
         note.read = true;
-        saveDb();
+        await supabase.from("notifications").update({ read: true }).eq("id", note.id);
       }
     }
   }
@@ -1712,7 +1902,20 @@
     renderApp();
   });
 
-  state.db = loadDb();
-  if (!state.db.users.some((user) => user.id === state.currentUserId)) state.currentUserId = state.db.users[0].id;
-  renderApp();
+  async function bootstrap() {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+    state.session = session;
+    await refreshAll();
+    renderApp();
+
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      state.session = session;
+      await refreshAll();
+      renderApp();
+    });
+  }
+
+  bootstrap();
 })();
