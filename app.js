@@ -173,7 +173,41 @@
       loginTitle: "Log in",
       loginSubtitle: "Log in to report items, message posters, and see your dashboard.",
       noLostYet: "No lost items reported yet.",
-      noFoundYet: "No found items reported yet."
+      noFoundYet: "No found items reported yet.",
+      keywordSearch: "Keyword Search",
+      aiImageSearch: "AI Image Search",
+      aiSearchIntro: "Upload a photo of the item and we'll describe it, then look for listings with similar words.",
+      uploadImage: "Upload Image",
+      searchAgain: "Search Again",
+      clearSearch: "Clear Search",
+      analyzingImage: "Analyzing your image...",
+      findingSimilar: "Finding similar items...",
+      imageAnalyzed: "Image analyzed:",
+      aiKeywords: "Keywords",
+      possibleMatchesTitle: "Possible Matches",
+      highlyRelevant: "Highly Relevant",
+      relevantLabel: "Relevant",
+      somewhatRelevant: "Somewhat Relevant",
+      similarItem: "Similar Item",
+      noSimilarItems: "No similar items found yet.",
+      tryAnotherPhoto: "Try another photo or check back later.",
+      aiSearchError: "Something went wrong analyzing that photo. Please try again.",
+      itemsReturned: "Items Returned",
+      mettaPointHistory: "เมตตา Point History",
+      noMettaHistory: "No เมตตา Point activity yet.",
+      confirmItemReturned: "Confirm Item Returned",
+      confirmReturnTitle: "Confirm the item was returned",
+      confirmReturnHint: "Pick who helped, and what they did. This can only be confirmed once per reason for this listing.",
+      whoHelped: "Who helped?",
+      reasonReturnedItem: "Returned the item to me (+10 เมตตา Point)",
+      reasonHelpedIdentify: "Helped identify the item (+5 เมตตา Point)",
+      awardPoints: "Confirm & Award",
+      alreadyAwarded: "That reward has already been given for this listing.",
+      pointsAwardedToast: "เมตตา Point awarded. Thank you for closing the loop.",
+      mettaThanksTitle: "Thank you for helping return an item",
+      returnedItemHistoryLabel: "Returned an item",
+      helpedIdentifyHistoryLabel: "Helped identify an item",
+      noHelpersYet: "No one has messaged you about this listing yet, so there is no one to credit."
     },
     th: {
       appName: "Lost & Found",
@@ -340,21 +374,57 @@
       loginTitle: "เข้าสู่ระบบ",
       loginSubtitle: "เข้าสู่ระบบเพื่อแจ้งรายการ ส่งข้อความ และดูแดชบอร์ดของคุณ",
       noLostYet: "ยังไม่มีรายการของหาย",
-      noFoundYet: "ยังไม่มีรายการของที่พบ"
+      noFoundYet: "ยังไม่มีรายการของที่พบ",
+      keywordSearch: "ค้นหาด้วยคำ",
+      aiImageSearch: "AI Image Search",
+      aiSearchIntro: "อัปโหลดรูปภาพของสิ่งของ ระบบจะอธิบายลักษณะแล้วค้นหารายการที่มีคำใกล้เคียงกัน",
+      uploadImage: "อัปโหลดรูปภาพ",
+      searchAgain: "ค้นหาอีกครั้ง",
+      clearSearch: "ล้างการค้นหา",
+      analyzingImage: "กำลังวิเคราะห์รูปภาพของคุณ...",
+      findingSimilar: "กำลังค้นหารายการที่คล้ายกัน...",
+      imageAnalyzed: "ผลวิเคราะห์รูปภาพ:",
+      aiKeywords: "คำสำคัญ",
+      possibleMatchesTitle: "รายการที่อาจตรงกัน",
+      highlyRelevant: "ตรงกันสูง",
+      relevantLabel: "ตรงกัน",
+      somewhatRelevant: "ตรงกันบางส่วน",
+      similarItem: "รายการที่คล้ายกัน",
+      noSimilarItems: "ยังไม่พบรายการที่คล้ายกัน",
+      tryAnotherPhoto: "ลองใช้รูปอื่น หรือกลับมาตรวจสอบใหม่ภายหลัง",
+      aiSearchError: "เกิดข้อผิดพลาดขณะวิเคราะห์รูปภาพ กรุณาลองใหม่อีกครั้ง",
+      itemsReturned: "จำนวนของที่คืนสำเร็จ",
+      mettaPointHistory: "ประวัติ เมตตา Point",
+      noMettaHistory: "ยังไม่มีประวัติ เมตตา Point",
+      confirmItemReturned: "ยืนยันว่าคืนของแล้ว",
+      confirmReturnTitle: "ยืนยันว่าได้รับของคืนแล้ว",
+      confirmReturnHint: "เลือกคนที่ช่วยเหลือ และประเภทความช่วยเหลือ ยืนยันได้เพียงครั้งเดียวต่อประเภทสำหรับรายการนี้",
+      whoHelped: "ใครเป็นคนช่วยเหลือ?",
+      reasonReturnedItem: "คืนของให้ฉัน (+10 เมตตา Point)",
+      reasonHelpedIdentify: "ช่วยระบุตัวตนของสิ่งของ (+5 เมตตา Point)",
+      awardPoints: "ยืนยันและมอบคะแนน",
+      alreadyAwarded: "รายการนี้ได้รับรางวัลประเภทนี้ไปแล้ว",
+      pointsAwardedToast: "มอบ เมตตา Point แล้ว ขอบคุณที่ช่วยปิดเคสนี้",
+      mettaThanksTitle: "ขอบคุณที่ช่วยคืนของ",
+      returnedItemHistoryLabel: "คืนของสำเร็จ",
+      helpedIdentifyHistoryLabel: "ช่วยระบุตัวตนของสิ่งของ",
+      noHelpersYet: "ยังไม่มีใครส่งข้อความเกี่ยวกับรายการนี้ จึงยังไม่มีคนให้มอบคะแนน"
     }
   };
 
   const state = {
-    db: { users: [], listings: [], conversations: [], notifications: [], reports: [] },
+    db: { users: [], listings: [], conversations: [], notifications: [], reports: [], mettaPoints: [] },
     session: null,
     authError: null,
     lang: localStorage.getItem(LANG_KEY) || "en",
     mobileOpen: false,
     searchLoading: false,
+    searchMode: "text",
     reportDraft: null,
     selectedConversationId: null,
     selectedImageIndex: 0,
-    modal: null
+    modal: null,
+    aiSearch: { status: "idle", imageDataUrl: null, description: "", keywords: [], results: [], error: "" }
   };
 
   function t(key) {
@@ -564,8 +634,29 @@
     state.db.notifications = (data || []).map(mapNotificationRow);
   }
 
+  async function refreshMettaPoints() {
+    if (!state.session) {
+      state.db.mettaPoints = [];
+      return;
+    }
+    const { data, error } = await supabase
+      .from("metta_points")
+      .select("*")
+      .eq("user_id", uid())
+      .order("created_at", { ascending: false });
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    state.db.mettaPoints = data || [];
+  }
+
   async function refreshAll() {
-    await Promise.all([refreshProfiles(), refreshListings(), refreshConversations(), refreshNotifications()]);
+    await Promise.all([refreshProfiles(), refreshListings(), refreshConversations(), refreshNotifications(), refreshMettaPoints()]);
+  }
+
+  function mettaReasonLabel(reason) {
+    return reason === "helped_identify" ? t("helpedIdentifyHistoryLabel") : t("returnedItemHistoryLabel");
   }
 
   function listingImage(listing) {
@@ -794,7 +885,7 @@
             <div><h2>${html(t("recentlyLost"))}</h2><p>${html(t("contactSafe"))}</p></div>
             <a class="ghost-button" href="#search?type=lost">${html(t("navSearch"))}</a>
           </div>
-          ${recentLost.length ? `<div class="grid cards">${recentLost.map(itemCard).join("")}</div>` : emptyState(t("noLostYet"), t("contactSafe"), "report")}
+          ${recentLost.length ? `<div class="grid cards">${recentLost.map((listing) => itemCard(listing)).join("")}</div>` : emptyState(t("noLostYet"), t("contactSafe"), "report")}
         </div>
       </section>
       <section class="section">
@@ -803,7 +894,7 @@
             <div><h2>${html(t("recentlyFound"))}</h2><p>${html(t("tagline"))}</p></div>
             <a class="ghost-button" href="#search?type=found">${html(t("navSearch"))}</a>
           </div>
-          ${recentFound.length ? `<div class="grid cards">${recentFound.map(itemCard).join("")}</div>` : emptyState(t("noFoundYet"), t("tagline"), "report")}
+          ${recentFound.length ? `<div class="grid cards">${recentFound.map((listing) => itemCard(listing)).join("")}</div>` : emptyState(t("noFoundYet"), t("tagline"), "report")}
         </div>
       </section>`;
   }
@@ -826,7 +917,7 @@
       </a>`;
   }
 
-  function itemCard(listing, score) {
+  function itemCard(listing, score, relevanceLabel) {
     return `
       <article class="item-card">
         <img class="item-thumb" src="${listingImage(listing)}" alt="${html(text(listing.name))}" />
@@ -838,7 +929,7 @@
           <h3 class="item-title">${html(text(listing.name))}</h3>
           <div class="meta">${html(text(listing.location))}</div>
           <p class="meta">${html(text(listing.description)).slice(0, 135)}${text(listing.description).length > 135 ? "..." : ""}</p>
-          ${score ? `<span class="confidence">${html(t("relevance"))}: ${html(score)}</span>` : ""}
+          ${relevanceLabel ? `<span class="confidence">${html(relevanceLabel)}</span>` : score ? `<span class="confidence">${html(t("relevance"))}: ${html(score)}</span>` : ""}
           <div class="card-foot">
             <span class="category-pill badge-match">${html(t(listing.category))}</span>
             <a class="secondary-button" href="#item/${listing.id}">${html(t("viewDetails"))}</a>
@@ -869,6 +960,11 @@
             </div>
             <a class="primary-button" href="#report/lost">${html(t("lostCta"))}</a>
           </div>
+          <div class="segmented" role="tablist">
+            <button type="button" data-action="set-search-mode" data-mode="text" class="${state.searchMode === "text" ? "active" : ""}">${html(t("keywordSearch"))}</button>
+            <button type="button" data-action="set-search-mode" data-mode="image" class="${state.searchMode === "image" ? "active" : ""}">${html(t("aiImageSearch"))}</button>
+          </div>
+          ${state.searchMode === "image" ? renderAiSearchPanel() : `
           <form class="search-panel" id="search-form">
             ${icon("search")}
             <input id="search-q" name="q" value="${html(filters.q)}" autocomplete="off" placeholder="${html(t("searchPlaceholder"))}" />
@@ -890,9 +986,54 @@
               </div>
               ${state.searchLoading ? `<div class="grid cards">${Array.from({ length: 6 }, () => `<div class="skeleton"></div>`).join("")}</div>` : results.length ? `<div class="grid cards">${results.map((entry) => itemCard(entry.listing, filters.q ? entry.score : 0)).join("")}</div>` : emptyState(t("noResults"), t("noResultsHint"), "search")}
             </section>
-          </div>
+          </div>`}
         </div>
       </section>`;
+  }
+
+  function aiRelevanceLabel(score) {
+    if (score >= 9) return t("highlyRelevant");
+    if (score >= 5) return t("relevantLabel");
+    return t("somewhatRelevant");
+  }
+
+  function renderAiSearchPanel() {
+    const ai = state.aiSearch;
+    return `
+      <div class="panel section" id="ai-search-panel">
+        <p class="muted">${html(t("aiSearchIntro"))}</p>
+        ${ai.status === "idle" ? `
+          <div class="dropzone" id="ai-dropzone">
+            <div>
+              <h3>${html(t("uploadImage"))}</h3>
+              <label class="secondary-button" for="ai-photo-input">${html(t("uploadImage"))}</label>
+              <input id="ai-photo-input" type="file" accept="image/*" hidden />
+            </div>
+          </div>` : ""}
+        ${ai.status === "analyzing" ? `<div class="empty-state">${icon("search")}<h3>${html(t("analyzingImage"))}</h3></div>` : ""}
+        ${ai.status === "searching" ? `<div class="empty-state">${icon("search")}<h3>${html(t("findingSimilar"))}</h3></div>` : ""}
+        ${ai.status === "error" ? `<div class="empty-state">${icon("shield")}<h3>${html(t("aiSearchError"))}</h3><p>${html(ai.error || "")}</p><button class="secondary-button" data-action="ai-clear-search" type="button">${html(t("clearSearch"))}</button></div>` : ""}
+        ${ai.status === "done" ? `
+          <div class="grid two">
+            <div>
+              <img class="gallery-main" src="${ai.imageDataUrl}" alt="${html(t("uploadImage"))}" />
+              <div class="button-row">
+                <button class="secondary-button" data-action="ai-search-again" type="button">${html(t("searchAgain"))}</button>
+                <button class="ghost-button" data-action="ai-clear-search" type="button">${html(t("clearSearch"))}</button>
+              </div>
+            </div>
+            <div>
+              <p class="meta">${html(t("imageAnalyzed"))}</p>
+              <p><strong>${html(ai.description)}</strong></p>
+              <p class="meta">${html(t("aiKeywords"))}</p>
+              <div class="button-row">${ai.keywords.map((word) => `<span class="category-pill badge-match">${html(word)}</span>`).join("")}</div>
+            </div>
+          </div>
+          <div class="section">
+            <h3>${html(t("possibleMatchesTitle"))}</h3>
+            ${ai.results.length ? `<div class="grid cards">${ai.results.map((entry) => itemCard(entry.listing, 0, aiRelevanceLabel(entry.score))).join("")}</div>` : emptyState(t("noSimilarItems"), t("tryAnotherPhoto"), "search")}
+          </div>` : ""}
+      </div>`;
   }
 
   function runSearch(filters) {
@@ -1108,6 +1249,7 @@
                 <button class="ghost-button" data-action="open-report-modal" data-id="${listing.id}" type="button">${html(t("reportListing"))}</button>
                 ${isOwner ? `<button class="ghost-button" data-action="open-edit-modal" data-id="${listing.id}" type="button">${html(t("edit"))}</button>` : ""}
                 ${isOwner && listing.status !== "recovered" ? `<button class="secondary-button" data-action="recover-listing" data-id="${listing.id}" type="button">${html(t("markRecovered"))}</button>` : ""}
+                ${isOwner && listing.status !== "recovered" ? `<button class="primary-button" data-action="open-confirm-return-modal" data-id="${listing.id}" type="button">${icon("check")}${html(t("confirmItemReturned"))}</button>` : ""}
                 ${isOwner ? `<button class="danger-button" data-action="delete-listing" data-id="${listing.id}" type="button">${html(t("deleteListing"))}</button>` : ""}
               </div>
             </div>
@@ -1237,6 +1379,10 @@
             ${statCard(mine.filter((item) => item.type === "found").length, t("itemsFound"))}
             ${statCard(recovered.length, t("recovered"))}
           </div>
+          <div class="section feature-strip">
+            ${statCard(`\u2764\ufe0f ${state.db.mettaPoints.reduce((sum, row) => sum + row.amount, 0)}`, "เมตตา Point")}
+            ${statCard(state.db.mettaPoints.filter((row) => row.reason === "returned_item").length, t("itemsReturned"))}
+          </div>
           <div class="grid two">
             <section class="panel">
               <h2>${html(t("manageListings"))}</h2>
@@ -1247,8 +1393,20 @@
               <div class="grid">${recovered.length ? recovered.map(listingRow).join("") : emptyState(t("emptyNotifications"), t("dashboardSubtitle"))}</div>
             </section>
           </div>
+          <section class="panel section">
+            <h2>${html(t("mettaPointHistory"))}</h2>
+            <div class="grid">${state.db.mettaPoints.length ? state.db.mettaPoints.map(mettaHistoryRow).join("") : emptyState(t("noMettaHistory"), "", "shield")}</div>
+          </section>
         </div>
       </section>`;
+  }
+
+  function mettaHistoryRow(row) {
+    return `
+      <div class="notification-row metta-row">
+        <div><strong>+${html(row.amount)}</strong> ${html(mettaReasonLabel(row.reason))}</div>
+        <span class="meta">${html(formatDate(row.created_at))}</span>
+      </div>`;
   }
 
   function listingRow(listing) {
@@ -1324,6 +1482,53 @@
             </div>
             <div class="button-row">
               <button class="primary-button" type="submit">${html(t("save"))}</button>
+              <button class="ghost-button" data-action="close-modal" type="button">${html(t("cancel"))}</button>
+            </div>
+          </form>
+        </div>`;
+    }
+    if (state.modal.type === "confirm-return") {
+      const listing = state.db.listings.find((item) => item.id === state.modal.itemId);
+      if (!listing) return "";
+      const myId = uid();
+      const partners = state.db.conversations
+        .filter((c) => c.itemId === listing.id)
+        .map((c) => c.participants.find((participantId) => participantId !== myId))
+        .filter(Boolean)
+        .filter((value, index, array) => array.indexOf(value) === index)
+        .map((partnerId) => state.db.users.find((u) => u.id === partnerId))
+        .filter(Boolean);
+      const awarded = state.modal.awardedReasons || [];
+      const reasonOptions = [
+        ["returned_item", t("reasonReturnedItem")],
+        ["helped_identify", t("reasonHelpedIdentify")]
+      ].filter(([reasonKey]) => !awarded.includes(reasonKey));
+
+      if (!partners.length || !reasonOptions.length) {
+        return `
+          <div class="modal-backdrop" data-action="close-modal">
+            <div class="modal">
+              <h2>${html(t("confirmReturnTitle"))}</h2>
+              <p class="muted">${html(!partners.length ? t("noHelpersYet") : t("alreadyAwarded"))}</p>
+              <div class="button-row"><button class="ghost-button" data-action="close-modal" type="button">${html(t("cancel"))}</button></div>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="modal-backdrop" data-action="close-modal">
+          <form class="modal" id="confirm-return-modal">
+            <h2>${html(t("confirmReturnTitle"))}</h2>
+            <p class="muted">${html(t("confirmReturnHint"))}</p>
+            <div class="field">
+              <label for="confirm-return-user">${html(t("whoHelped"))}</label>
+              <select id="confirm-return-user">${partners.map((partner) => `<option value="${html(partner.id)}">${html(userName(partner))}</option>`).join("")}</select>
+            </div>
+            <div class="field">
+              <label for="confirm-return-reason">${html(t("reasonReturnedItem"))}</label>
+              <select id="confirm-return-reason">${reasonOptions.map(([value, label]) => `<option value="${html(value)}">${html(label)}</option>`).join("")}</select>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" type="submit">${icon("check")}${html(t("awardPoints"))}</button>
               <button class="ghost-button" data-action="close-modal" type="button">${html(t("cancel"))}</button>
             </div>
           </form>
@@ -1605,6 +1810,53 @@
     }
   }
 
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function runAiImageSearch(file) {
+    const ai = state.aiSearch;
+    ai.imageDataUrl = URL.createObjectURL(file);
+    ai.status = "analyzing";
+    ai.error = "";
+    renderApp();
+    try {
+      const imageBase64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke("analyze-image", {
+        body: { imageBase64, mediaType: file.type || "image/jpeg" }
+      });
+      if (error || !data || data.error) {
+        ai.status = "error";
+        ai.error = (data && data.error) || (error && error.message) || "";
+        renderApp();
+        return;
+      }
+      ai.description = data.description || "";
+      ai.keywords = data.keywords || [];
+      ai.status = "searching";
+      renderApp();
+      const query = [ai.description, ...ai.keywords].join(" ");
+      setTimeout(() => {
+        ai.results = state.db.listings
+          .map((listing) => ({ listing, score: scoreListing(query, listing) }))
+          .filter((entry) => entry.score >= 3)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 12);
+        ai.status = "done";
+        renderApp();
+      }, 350);
+    } catch (err) {
+      ai.status = "error";
+      ai.error = err.message || "";
+      renderApp();
+    }
+  }
+
   function bindPage() {
     document.querySelectorAll("[data-action]").forEach((node) => {
       node.addEventListener("click", handleAction);
@@ -1642,6 +1894,15 @@
       ["dragenter", "dragover"].forEach((name) => dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.add("drag"); }));
       ["dragleave", "drop"].forEach((name) => dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.remove("drag"); }));
       dropzone.addEventListener("drop", (event) => readFiles(event.dataTransfer.files));
+    }
+
+    const aiDropzone = document.getElementById("ai-dropzone");
+    const aiPhotoInput = document.getElementById("ai-photo-input");
+    if (aiPhotoInput) aiPhotoInput.addEventListener("change", () => { if (aiPhotoInput.files[0]) runAiImageSearch(aiPhotoInput.files[0]); });
+    if (aiDropzone) {
+      ["dragenter", "dragover"].forEach((name) => aiDropzone.addEventListener(name, (event) => { event.preventDefault(); aiDropzone.classList.add("drag"); }));
+      ["dragleave", "drop"].forEach((name) => aiDropzone.addEventListener(name, (event) => { event.preventDefault(); aiDropzone.classList.remove("drag"); }));
+      aiDropzone.addEventListener("drop", (event) => { if (event.dataTransfer.files[0]) runAiImageSearch(event.dataTransfer.files[0]); });
     }
 
     const chatForm = document.getElementById("chat-form");
@@ -1730,6 +1991,51 @@
         });
         state.modal = null;
         toast(t("save"));
+        renderApp();
+      });
+    }
+
+    const confirmReturnModal = document.getElementById("confirm-return-modal");
+    if (confirmReturnModal) {
+      confirmReturnModal.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const listing = state.db.listings.find((item) => item.id === state.modal.itemId);
+        if (!listing || listing.posterId !== uid()) {
+          toast(t("ownerOnly"));
+          return;
+        }
+        const recipientId = document.getElementById("confirm-return-user").value;
+        const reason = document.getElementById("confirm-return-reason").value;
+        const amount = reason === "helped_identify" ? 5 : 10;
+        const { error } = await supabase.from("metta_points").insert({
+          user_id: recipientId,
+          listing_id: listing.id,
+          awarded_by: uid(),
+          reason,
+          amount
+        });
+        if (error) {
+          state.modal = null;
+          const isDuplicate = error.code === "23505" || String(error.message || "").toLowerCase().includes("duplicate");
+          toast(isDuplicate ? t("alreadyAwarded") : error.message);
+          renderApp();
+          return;
+        }
+        if (reason === "returned_item" && listing.status !== "recovered") {
+          await supabase.from("listings").update({ status: "recovered", recovered_at: nowIso(), updated_at: nowIso() }).eq("id", listing.id);
+          listing.status = "recovered";
+          listing.recoveredAt = nowIso();
+          listing.updatedAt = nowIso();
+        }
+        await addNotification(
+          recipientId,
+          "metta",
+          listing.id,
+          tObj("Thank you for helping!", "ขอบคุณที่ช่วยเหลือ!"),
+          tObj(`Thank you for helping return the item. You received +${amount} เมตตา Point.`, `ขอบคุณที่ช่วยคืนของให้เจ้าของ \u2764\ufe0f คุณได้รับ +${amount} เมตตา Point`)
+        );
+        state.modal = null;
+        toast(t("pointsAwardedToast"));
         renderApp();
       });
     }
@@ -1830,6 +2136,15 @@
       const [photo] = state.reportDraft.photos.splice(indexValue, 1);
       state.reportDraft.photos.splice(target, 0, photo);
       renderApp();
+    } else if (action === "set-search-mode") {
+      state.searchMode = actionNode.dataset.mode;
+      renderApp();
+    } else if (action === "ai-search-again") {
+      state.aiSearch = { status: "idle", imageDataUrl: null, description: "", keywords: [], results: [], error: "" };
+      renderApp();
+    } else if (action === "ai-clear-search") {
+      state.aiSearch = { status: "idle", imageDataUrl: null, description: "", keywords: [], results: [], error: "" };
+      renderApp();
     } else if (action === "select-image") {
       state.selectedImageIndex = Number(actionNode.dataset.index);
       renderApp();
@@ -1861,6 +2176,16 @@
         return;
       }
       state.modal = { type: "edit", itemId: listing.id };
+      renderApp();
+    } else if (action === "open-confirm-return-modal") {
+      event.preventDefault();
+      const listing = state.db.listings.find((item) => item.id === actionNode.dataset.id);
+      if (!listing || listing.posterId !== uid()) {
+        toast(t("ownerOnly"));
+        return;
+      }
+      const { data } = await supabase.from("metta_points").select("reason").eq("listing_id", listing.id);
+      state.modal = { type: "confirm-return", itemId: listing.id, awardedReasons: (data || []).map((row) => row.reason) };
       renderApp();
     } else if (action === "close-modal") {
       if (actionNode.classList.contains("modal-backdrop") && event.target !== actionNode) return;
