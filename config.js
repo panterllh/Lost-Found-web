@@ -8,6 +8,6 @@
 // allow.
 // ------------------------------------------------------------------
 window.SUPABASE_CONFIG = {
-  url: "https://kfwdezudenfbhqbicpjl.supabase.co/rest/v1/",
+  url: "https://kfwdezudenfbhqbicpjl.supabase.co",
   anonKey: "sb_publishable_8z287IxCdOTCcSfykl9CgQ_hroeii6L"
 };
