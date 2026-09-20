@@ -8,6 +8,6 @@
 // allow.
 // ------------------------------------------------------------------
 window.SUPABASE_CONFIG = {
-  url: "https://YOUR-PROJECT-ID.supabase.co",
-  anonKey: "YOUR-ANON-PUBLIC-KEY"
+  url: "https://kfwdezudenfbhqbicpjl.supabase.co/rest/v1/",
+  anonKey: "sb_publishable_8z287IxCdOTCcSfykl9CgQ_hroeii6L"
 };
