@@ -342,6 +342,20 @@ h3 {
   margin: 0 auto;
 }
 
+.auth-wrap {
+  max-width: 460px;
+}
+
+.auth-wrap .page-title {
+  display: block;
+  text-align: center;
+}
+
+.auth-wrap .button-row {
+  justify-content: space-between;
+  align-items: center;
+}
+
 /* ---------------- Hero ---------------- */
 
 .hero {
