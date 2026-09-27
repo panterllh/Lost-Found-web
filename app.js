@@ -87,6 +87,7 @@
       published: "Listing published.",
       messageUser: "Message User",
       thinkMine: "I Think This Is Mine",
+      foundThisItem: "I Found This Item",
       reportListing: "Report Listing",
       markRecovered: "Mark as Recovered",
       deleteListing: "Delete Listing",
@@ -176,7 +177,8 @@
       noFoundYet: "No found items reported yet.",
       keywordSearch: "Keyword Search",
       aiImageSearch: "AI Image Search",
-      aiSearchIntro: "Upload a photo of the item and we'll describe it, then look for listings with similar words.",
+      aiSearchIntro: "Upload a photo of the item. AI will look at visible details such as item type, color, shape, brand (if visible), and other distinctive features, then search existing listings for similar wording.",
+      aiSearchDisclaimer: "AI results are possible matches only, based on visual description — not a confirmed or guaranteed identification. Please verify details with the poster before assuming it's the same item.",
       uploadImage: "Upload Image",
       searchAgain: "Search Again",
       clearSearch: "Clear Search",
@@ -288,6 +290,7 @@
       published: "เผยแพร่รายการแล้ว",
       messageUser: "ส่งข้อความ",
       thinkMine: "คิดว่านี่เป็นของฉัน",
+      foundThisItem: "ฉันพบของชิ้นนี้",
       reportListing: "รายงานรายการ",
       markRecovered: "ทำเครื่องหมายว่าคืนของแล้ว",
       deleteListing: "ลบรายการ",
@@ -377,7 +380,8 @@
       noFoundYet: "ยังไม่มีรายการของที่พบ",
       keywordSearch: "ค้นหาด้วยคำ",
       aiImageSearch: "AI Image Search",
-      aiSearchIntro: "อัปโหลดรูปภาพของสิ่งของ ระบบจะอธิบายลักษณะแล้วค้นหารายการที่มีคำใกล้เคียงกัน",
+      aiSearchIntro: "อัปโหลดรูปภาพของสิ่งของ ระบบ AI จะวิเคราะห์รายละเอียดที่มองเห็นได้ เช่น ประเภทของสิ่งของ สี รูปทรง ยี่ห้อ (ถ้ามองเห็น) และลักษณะเด่นอื่น ๆ จากนั้นค้นหารายการที่มีคำอธิบายใกล้เคียงกันในระบบ",
+      aiSearchDisclaimer: "ผลลัพธ์จาก AI เป็นเพียง \"รายการที่อาจตรงกัน\" จากลักษณะภายนอกเท่านั้น ไม่ใช่การยืนยันว่าเป็นสิ่งของชิ้นเดียวกันอย่างแน่นอน กรุณาตรวจสอบรายละเอียดกับผู้โพสต์ก่อนสรุปว่าใช่สิ่งของชิ้นเดียวกัน",
       uploadImage: "อัปโหลดรูปภาพ",
       searchAgain: "ค้นหาอีกครั้ง",
       clearSearch: "ล้างการค้นหา",
@@ -1002,6 +1006,7 @@
     return `
       <div class="panel section" id="ai-search-panel">
         <p class="muted">${html(t("aiSearchIntro"))}</p>
+        <p class="meta ai-disclaimer">${icon("shield")}${html(t("aiSearchDisclaimer"))}</p>
         ${ai.status === "idle" ? `
           <div class="dropzone" id="ai-dropzone">
             <div>
@@ -1245,7 +1250,7 @@
               </div>
               <p class="meta">${html(t("contactSafe"))}</p>
               <div class="button-row">
-                ${!isOwner ? `<button class="primary-button" data-action="message-user" data-id="${listing.id}" type="button">${html(t("messageUser"))}</button><button class="secondary-button" data-action="think-mine" data-id="${listing.id}" type="button">${html(t("thinkMine"))}</button>` : ""}
+                ${!isOwner ? `<button class="primary-button" data-action="message-user" data-id="${listing.id}" type="button">${html(t("messageUser"))}</button><button class="secondary-button" data-action="think-mine" data-id="${listing.id}" type="button">${html(listing.type === "lost" ? t("foundThisItem") : t("thinkMine"))}</button>` : ""}
                 <button class="ghost-button" data-action="open-report-modal" data-id="${listing.id}" type="button">${html(t("reportListing"))}</button>
                 ${isOwner ? `<button class="ghost-button" data-action="open-edit-modal" data-id="${listing.id}" type="button">${html(t("edit"))}</button>` : ""}
                 ${isOwner && listing.status !== "recovered" ? `<button class="secondary-button" data-action="recover-listing" data-id="${listing.id}" type="button">${html(t("markRecovered"))}</button>` : ""}
@@ -2161,7 +2166,11 @@
       if (!state.session) return go("login");
       const listing = state.db.listings.find((item) => item.id === actionNode.dataset.id);
       if (!listing) return;
-      await addNotification(listing.posterId, "interaction", listing.id, tObj("Someone may own your found item", "มีคนอาจเป็นเจ้าของรายการที่คุณพบ"), tObj(`${userName(currentUser())} thinks ${text(listing.name)} may be theirs.`, `${userName(currentUser())} คิดว่า ${text(listing.name)} อาจเป็นของเขา/เธอ`));
+      if (listing.type === "lost") {
+        await addNotification(listing.posterId, "interaction", listing.id, tObj("Someone may have found your lost item", "มีคนอาจพบของที่คุณทำหาย"), tObj(`${userName(currentUser())} thinks they found ${text(listing.name)} and wants to help return it.`, `${userName(currentUser())} คิดว่าพบ ${text(listing.name)} และต้องการช่วยคืนให้`));
+      } else {
+        await addNotification(listing.posterId, "interaction", listing.id, tObj("Someone may own your found item", "มีคนอาจเป็นเจ้าของรายการที่คุณพบ"), tObj(`${userName(currentUser())} thinks ${text(listing.name)} may be theirs.`, `${userName(currentUser())} คิดว่า ${text(listing.name)} อาจเป็นของเขา/เธอ`));
+      }
       toast(t("interactionSent"));
     } else if (action === "open-report-modal") {
       event.preventDefault();
