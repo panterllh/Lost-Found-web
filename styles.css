@@ -380,6 +380,139 @@ h3 {
   animation: fadeSlideIn 0.2s ease;
 }
 
+/* ---------------- Motion (site-wide, lightweight) ---------------- */
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+}
+
+/* Page transition: <main> is a fresh element every render, so this
+   replays automatically on every navigation with no JS involved. */
+.app-shell > main {
+  animation: fadeSlideIn 0.3s ease;
+}
+
+/* Card / list entrances, staggered lightly across a grid so a page
+   of results feels like it settles in rather than popping at once. */
+.item-card,
+.mini-card,
+.stat-card,
+.panel,
+.conversation-card,
+.notification-row,
+.listing-row,
+.match-card,
+.upload-tile,
+.toast {
+  animation: fadeSlideIn 0.28s ease both;
+}
+
+.grid.cards > *:nth-child(1),
+.grid.three > *:nth-child(1) {
+  animation-delay: 0s;
+}
+.grid.cards > *:nth-child(2),
+.grid.three > *:nth-child(2) {
+  animation-delay: 0.03s;
+}
+.grid.cards > *:nth-child(3),
+.grid.three > *:nth-child(3) {
+  animation-delay: 0.06s;
+}
+.grid.cards > *:nth-child(4) {
+  animation-delay: 0.09s;
+}
+
+/* Buttons: a touch of lift on hover, a touch of press on click. */
+.primary-button,
+.secondary-button,
+.ghost-button,
+.danger-button,
+.icon-button,
+.lang-toggle,
+.user-switch,
+.segmented button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.primary-button:hover,
+.secondary-button:hover {
+  transform: translateY(-1px) scale(1.015);
+}
+
+.primary-button:active,
+.secondary-button:active,
+.ghost-button:active,
+.danger-button:active {
+  transform: scale(0.97);
+}
+
+.segmented button.active {
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+/* Modal: backdrop fades, the card itself pops in with a scale. */
+.modal-backdrop {
+  animation: fadeSlideIn 0.18s ease;
+}
+
+.modal {
+  animation: scaleIn 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Loading states: a calm pulse on the icon, not a spin — keeps
+   "Analyzing your image..." / "Finding similar items..." feeling
+   alive without being busy. */
+#ai-search-panel .empty-state .icon,
+.chat-panel .empty-state .icon {
+  animation: pulseSoft 1.5s ease-in-out infinite;
+}
+
+/* Gallery image swap and status badges get a tiny settle-in too. */
+.gallery-main,
+.status-badge {
+  transition: opacity 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell > main,
+  .item-card,
+  .mini-card,
+  .stat-card,
+  .panel,
+  .conversation-card,
+  .notification-row,
+  .listing-row,
+  .match-card,
+  .upload-tile,
+  .toast,
+  .modal-backdrop,
+  .modal,
+  #ai-search-panel .empty-state .icon,
+  .chat-panel .empty-state .icon {
+    animation: none !important;
+  }
+}
+
 /* ---------------- Hero ---------------- */
 
 .hero {
