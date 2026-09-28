@@ -177,8 +177,8 @@
       noFoundYet: "No found items reported yet.",
       keywordSearch: "Keyword Search",
       aiImageSearch: "AI Image Search",
-      aiSearchIntro: "Upload a photo of the item. AI will look at visible details such as item type, color, shape, brand (if visible), and other distinctive features, then search existing listings for similar wording.",
-      aiSearchDisclaimer: "AI results are possible matches only, based on visual description — not a confirmed or guaranteed identification. Please verify details with the poster before assuming it's the same item.",
+      aiSearchIntro: "Upload a photo of a lost or found item. AI will look at visible details — item type, color, shape, brand (if visible), distinctive features, and other standout details — then search existing listings for a potential match.",
+      aiSearchDisclaimer: "Results are only \"Possible Matches\" based on visible description — never a guaranteed identification. Please verify with the poster before assuming it's the same item.",
       uploadImage: "Upload Image",
       searchAgain: "Search Again",
       clearSearch: "Clear Search",
@@ -191,7 +191,9 @@
       relevantLabel: "Relevant",
       somewhatRelevant: "Somewhat Relevant",
       similarItem: "Similar Item",
-      noSimilarItems: "No similar items found yet.",
+      noSimilarItems: "No matching items found yet.",
+      aiPossibleMatch: "Possible Match",
+      aiMatchesLabel: "Matches",
       tryAnotherPhoto: "Try another photo or check back later.",
       aiSearchError: "Something went wrong analyzing that photo. Please try again.",
       itemsReturned: "Items Returned",
@@ -380,8 +382,8 @@
       noFoundYet: "ยังไม่มีรายการของที่พบ",
       keywordSearch: "ค้นหาด้วยคำ",
       aiImageSearch: "AI Image Search",
-      aiSearchIntro: "อัปโหลดรูปภาพของสิ่งของ ระบบ AI จะวิเคราะห์รายละเอียดที่มองเห็นได้ เช่น ประเภทของสิ่งของ สี รูปทรง ยี่ห้อ (ถ้ามองเห็น) และลักษณะเด่นอื่น ๆ จากนั้นค้นหารายการที่มีคำอธิบายใกล้เคียงกันในระบบ",
-      aiSearchDisclaimer: "ผลลัพธ์จาก AI เป็นเพียง \"รายการที่อาจตรงกัน\" จากลักษณะภายนอกเท่านั้น ไม่ใช่การยืนยันว่าเป็นสิ่งของชิ้นเดียวกันอย่างแน่นอน กรุณาตรวจสอบรายละเอียดกับผู้โพสต์ก่อนสรุปว่าใช่สิ่งของชิ้นเดียวกัน",
+      aiSearchIntro: "อัปโหลดรูปภาพของสิ่งของที่หายหรือที่พบ ระบบ AI จะวิเคราะห์รายละเอียดที่มองเห็นได้ ได้แก่ ประเภทสิ่งของ สี รูปร่าง ยี่ห้อ (ถ้ามองเห็น) ลักษณะเฉพาะ และรายละเอียดที่โดดเด่น จากนั้นค้นหารายการที่มีอยู่ในระบบที่อาจตรงกัน",
+      aiSearchDisclaimer: "ผลลัพธ์เป็นเพียง \"รายการที่อาจตรงกัน\" จากลักษณะภายนอกเท่านั้น ไม่ใช่การยืนยันว่าเป็นสิ่งของชิ้นเดียวกันอย่างแน่นอน กรุณาตรวจสอบรายละเอียดกับผู้โพสต์ก่อนสรุปว่าใช่สิ่งของชิ้นเดียวกัน",
       uploadImage: "อัปโหลดรูปภาพ",
       searchAgain: "ค้นหาอีกครั้ง",
       clearSearch: "ล้างการค้นหา",
@@ -394,7 +396,9 @@
       relevantLabel: "ตรงกัน",
       somewhatRelevant: "ตรงกันบางส่วน",
       similarItem: "รายการที่คล้ายกัน",
-      noSimilarItems: "ยังไม่พบรายการที่คล้ายกัน",
+      noSimilarItems: "ยังไม่พบรายการที่ตรงกัน",
+      aiPossibleMatch: "รายการที่อาจตรงกัน",
+      aiMatchesLabel: "ตรงกัน",
       tryAnotherPhoto: "ลองใช้รูปอื่น หรือกลับมาตรวจสอบใหม่ภายหลัง",
       aiSearchError: "เกิดข้อผิดพลาดขณะวิเคราะห์รูปภาพ กรุณาลองใหม่อีกครั้ง",
       itemsReturned: "จำนวนของที่คืนสำเร็จ",
@@ -714,6 +718,142 @@
     return score;
   }
 
+  // ---------------- AI Image Search matching (separate from the
+  // general keyword search above; does not affect it in any way) ----------------
+
+  const AI_FILLER_WORDS = new Set([
+    "black", "white", "red", "blue", "green", "yellow", "brown", "gray", "grey", "pink", "purple", "orange",
+    "dark", "light", "with", "and", "the", "a", "an", "of", "for", "on", "in", "has", "item", "object", "thing",
+    "photo", "image", "picture", "small", "large", "big", "new", "old", "plastic", "metal", "fabric", "material",
+    "color", "colour", "bag", "phone", "this", "that", "looks", "appears", "visible"
+  ]);
+
+  const AI_COLOR_WORDS = new Set([
+    "black", "white", "red", "blue", "green", "yellow", "brown", "gray", "grey", "pink", "purple", "orange",
+    "silver", "gold", "navy", "beige", "tan"
+  ]);
+
+  const AI_COLOR_LABELS = {
+    black: { en: "Black", th: "สีดำ" }, white: { en: "White", th: "สีขาว" }, red: { en: "Red", th: "สีแดง" },
+    blue: { en: "Blue", th: "สีน้ำเงิน" }, green: { en: "Green", th: "สีเขียว" }, yellow: { en: "Yellow", th: "สีเหลือง" },
+    brown: { en: "Brown", th: "สีน้ำตาล" }, gray: { en: "Gray", th: "สีเทา" }, grey: { en: "Gray", th: "สีเทา" },
+    pink: { en: "Pink", th: "สีชมพู" }, purple: { en: "Purple", th: "สีม่วง" }, orange: { en: "Orange", th: "สีส้ม" },
+    silver: { en: "Silver", th: "สีเงิน" }, gold: { en: "Gold", th: "สีทอง" }, navy: { en: "Navy", th: "สีกรมท่า" },
+    beige: { en: "Beige", th: "สีเบจ" }, tan: { en: "Tan", th: "สีแทน" }
+  };
+
+  const AI_TYPE_LABELS = {
+    backpack: { en: "Backpack", th: "กระเป๋าเป้" }, wallet: { en: "Wallet", th: "กระเป๋าสตางค์" },
+    purse: { en: "Purse", th: "กระเป๋าถือ" }, smartphone: { en: "Phone", th: "โทรศัพท์" },
+    iphone: { en: "iPhone", th: "ไอโฟน" }, laptop: { en: "Laptop", th: "แล็ปท็อป" }, tablet: { en: "Tablet", th: "แท็บเล็ต" },
+    watch: { en: "Watch", th: "นาฬิกา" }, bracelet: { en: "Bracelet", th: "กำไล" }, necklace: { en: "Necklace", th: "สร้อยคอ" },
+    ring: { en: "Ring", th: "แหวน" }, earring: { en: "Earring", th: "ต่างหู" }, glasses: { en: "Glasses", th: "แว่นตา" },
+    sunglasses: { en: "Sunglasses", th: "แว่นกันแดด" }, umbrella: { en: "Umbrella", th: "ร่ม" }, bottle: { en: "Bottle", th: "ขวดน้ำ" },
+    key: { en: "Key", th: "กุญแจ" }, keys: { en: "Keys", th: "กุญแจ" }, keychain: { en: "Keychain", th: "พวงกุญแจ" },
+    card: { en: "Card", th: "บัตร" }, jacket: { en: "Jacket", th: "แจ็คเก็ต" }, coat: { en: "Coat", th: "เสื้อโค้ท" },
+    shoe: { en: "Shoe", th: "รองเท้า" }, shoes: { en: "Shoes", th: "รองเท้า" }, sneaker: { en: "Sneaker", th: "รองเท้าผ้าใบ" },
+    helmet: { en: "Helmet", th: "หมวกกันน็อค" }, charger: { en: "Charger", th: "สายชาร์จ" },
+    headphone: { en: "Headphones", th: "หูฟัง" }, headphones: { en: "Headphones", th: "หูฟัง" },
+    earbud: { en: "Earbuds", th: "หูฟังไร้สาย" }, earbuds: { en: "Earbuds", th: "หูฟังไร้สาย" },
+    camera: { en: "Camera", th: "กล้อง" }, book: { en: "Book", th: "หนังสือ" }, notebook: { en: "Notebook", th: "สมุด" },
+    folder: { en: "Folder", th: "แฟ้ม" }, document: { en: "Document", th: "เอกสาร" }, passport: { en: "Passport", th: "หนังสือเดินทาง" },
+    luggage: { en: "Luggage", th: "กระเป๋าเดินทาง" }, suitcase: { en: "Suitcase", th: "กระเป๋าเดินทาง" },
+    toy: { en: "Toy", th: "ของเล่น" }, hat: { en: "Hat", th: "หมวก" }, cap: { en: "Cap", th: "หมวกแก๊ป" },
+    scarf: { en: "Scarf", th: "ผ้าพันคอ" }
+  };
+
+  function localizedLabel(map, key) {
+    const entry = map[key];
+    if (!entry) return key;
+    return entry[state.lang] || entry.en || key;
+  }
+
+  function aiTokenSet(description, keywords) {
+    return [...new Set(tokenize(`${description || ""} ${(keywords || []).join(" ")}`))];
+  }
+
+  // Scores one listing against an AI-analyzed photo. Weighted so that
+  // generic words (colors, "bag", "phone", ...) barely move the score
+  // on their own, while brand, specific item type, and combinations of
+  // distinctive details drive relevance up — and a conflicting color or
+  // item type pulls it back down instead of being ignored.
+  function aiMatchScore(aiTokens, aiText, listing) {
+    const listingTextTokens = new Set(tokenize(searchableText(listing)));
+    const listingFullText = searchableText(listing).toLowerCase();
+
+    let score = 0;
+    const categoriesMatched = new Set();
+    const matchedLabels = [];
+
+    // Color: bonus if shared, penalty if both sides name a color and disagree
+    const aiColors = aiTokens.filter((tok) => AI_COLOR_WORDS.has(tok));
+    const listingColorTokens = tokenize(listing.color || "").filter((tok) => AI_COLOR_WORDS.has(tok));
+    if (aiColors.length) {
+      const sharedColor = aiColors.find((tok) => listingColorTokens.includes(tok));
+      if (sharedColor) {
+        score += 5;
+        categoriesMatched.add("color");
+        matchedLabels.push(localizedLabel(AI_COLOR_LABELS, sharedColor));
+      } else if (listingColorTokens.length) {
+        score -= 10;
+      }
+    }
+
+    // Item type: bonus if shared, penalty if both sides clearly name a
+    // different specific type (e.g. photo is a backpack, listing is a wallet)
+    const aiTypes = aiTokens.filter((tok) => AI_TYPE_LABELS[tok]);
+    const listingTypes = Object.keys(AI_TYPE_LABELS).filter((tok) => listingFullText.includes(tok));
+    if (aiTypes.length) {
+      const sharedType = aiTypes.find((tok) => listingTypes.includes(tok));
+      if (sharedType) {
+        score += 12;
+        categoriesMatched.add("type");
+        matchedLabels.push(localizedLabel(AI_TYPE_LABELS, sharedType));
+      } else if (listingTypes.length) {
+        score -= 20;
+      }
+    }
+
+    // Brand: a real brand-field match is a very strong, distinctive signal
+    const listingBrand = (listing.brand || "").trim().toLowerCase();
+    if (listingBrand && (aiTokens.includes(listingBrand) || aiText.includes(listingBrand))) {
+      score += 20;
+      categoriesMatched.add("brand");
+      matchedLabels.push(listing.brand.trim());
+    }
+
+    // Distinctive details: specific words that are neither filler,
+    // color, nor a bare item type (e.g. "logo", "pocket", "zipper")
+    const aiDistinctive = aiTokens.filter((tok) => tok.length > 2 && !AI_FILLER_WORDS.has(tok) && !AI_COLOR_WORDS.has(tok) && !AI_TYPE_LABELS[tok]);
+    const matchedDistinctive = aiDistinctive.filter((tok) => listingTextTokens.has(tok));
+    if (matchedDistinctive.length) {
+      score += Math.min(matchedDistinctive.length, 4) * 6;
+      categoriesMatched.add("distinctive");
+      matchedDistinctive.slice(0, 3).forEach((tok) => {
+        const label = tok.charAt(0).toUpperCase() + tok.slice(1);
+        if (!matchedLabels.some((existing) => existing.toLowerCase() === label.toLowerCase())) matchedLabels.push(label);
+      });
+    }
+
+    // Multiple attributes agreeing is much stronger evidence than any one alone
+    if (categoriesMatched.size >= 3) score += 10;
+
+    score = Math.max(score, 0);
+    const passes = (categoriesMatched.size >= 2 && score >= 15) || score >= 20;
+    return { listing, score, passes, matchedLabels };
+  }
+
+  function findAiMatches(description, keywords, limit = 12) {
+    const aiTokens = aiTokenSet(description, keywords);
+    const aiText = `${description || ""} ${(keywords || []).join(" ")}`.toLowerCase();
+    return state.db.listings
+      .filter((listing) => listing.status !== "recovered")
+      .map((listing) => aiMatchScore(aiTokens, aiText, listing))
+      .filter((entry) => entry.passes)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
+
   function findMatches(source, limit = 4) {
     const sourceTokens = new Set(tokenize(searchableText(source)));
     return state.db.listings
@@ -995,10 +1135,27 @@
       </section>`;
   }
 
-  function aiRelevanceLabel(score) {
-    if (score >= 9) return t("highlyRelevant");
-    if (score >= 5) return t("relevantLabel");
-    return t("somewhatRelevant");
+  function aiResultCard(entry) {
+    const listing = entry.listing;
+    return `
+      <article class="item-card">
+        <img class="item-thumb" src="${listingImage(listing)}" alt="${html(text(listing.name))}" />
+        <div class="item-card-body">
+          <div class="card-foot">
+            <span class="status-badge ${statusClass(listing)}">${html(statusLabel(listing))}</span>
+            <span class="meta">${html(formatDate(listing.createdAt))}</span>
+          </div>
+          <h3 class="item-title">${html(text(listing.name))}</h3>
+          <div class="meta">${html(text(listing.location))}</div>
+          <p class="meta">${html(text(listing.description)).slice(0, 135)}${text(listing.description).length > 135 ? "..." : ""}</p>
+          <span class="confidence">${html(t("aiPossibleMatch"))}</span>
+          ${entry.matchedLabels.length ? `<p class="meta">${html(t("aiMatchesLabel"))}: ${html(entry.matchedLabels.join(" • "))}</p>` : ""}
+          <div class="card-foot">
+            <span class="category-pill badge-match">${html(t(listing.category))}</span>
+            <a class="secondary-button" href="#item/${listing.id}">${html(t("viewDetails"))}</a>
+          </div>
+        </div>
+      </article>`;
   }
 
   function renderAiSearchPanel() {
@@ -1036,7 +1193,7 @@
           </div>
           <div class="section">
             <h3>${html(t("possibleMatchesTitle"))}</h3>
-            ${ai.results.length ? `<div class="grid cards">${ai.results.map((entry) => itemCard(entry.listing, 0, aiRelevanceLabel(entry.score))).join("")}</div>` : emptyState(t("noSimilarItems"), t("tryAnotherPhoto"), "search")}
+            ${ai.results.length ? `<div class="grid cards">${ai.results.map((entry) => aiResultCard(entry)).join("")}</div>` : emptyState(t("noSimilarItems"), t("tryAnotherPhoto"), "search")}
           </div>` : ""}
       </div>`;
   }
@@ -1845,13 +2002,8 @@
       ai.keywords = data.keywords || [];
       ai.status = "searching";
       renderApp();
-      const query = [ai.description, ...ai.keywords].join(" ");
       setTimeout(() => {
-        ai.results = state.db.listings
-          .map((listing) => ({ listing, score: scoreListing(query, listing) }))
-          .filter((entry) => entry.score >= 3)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 12);
+        ai.results = findAiMatches(ai.description, ai.keywords);
         ai.status = "done";
         renderApp();
       }, 350);
